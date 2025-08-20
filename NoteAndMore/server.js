@@ -12,12 +12,14 @@ const taskRoutes = require("./routes/tasks");
 const eventRoutes = require("./routes/events");
 const contactRoutes = require("./routes/contacts");
 const shoppingRoutes = require("./routes/shopping");
-const userRoutes = require('./routes/users.js');
-// const quoteRoutes = require('./routes/quotes');
-// const categoryRoutes = require('./routes/categories');
+const categoryRoutes = require("./routes/categories");
+const userRoutes = require("./routes/users"); // Import user routes
+
+// Import Swagger configuration
+const { swaggerUi, specs } = require("./config/swagger");
 
 // Import middleware
-const {authMiddleware} = require("./middleware/auth");
+const { authMiddleware } = require("./middleware/auth");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -88,8 +90,20 @@ app.use("/api/events", authMiddleware, eventRoutes);
 app.use("/api/contacts", authMiddleware, contactRoutes);
 app.use("/api/shopping", authMiddleware, shoppingRoutes);
 // app.use("/api/quotes", authMiddleware, quoteRoutes); //TODO: Implement quote routes
-// app.use("/api/categories", authMiddleware, categoryRoutes); // TODO: Implement category routes
-app.use("/api/users", authMiddleware, userRoutes); 
+app.use("/api/categories", authMiddleware, categoryRoutes); // TODO: Implement category routes
+app.use("/api/users", authMiddleware, userRoutes);
+
+// Swagger documentation
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
+
+// Add info route
+app.get("/api", (req, res) => {
+  res.json({
+    message: "Task Management API",
+    documentation: "http://localhost:5000/api-docs",
+    version: "1.0.0",
+  });
+});
 
 // 404 handler
 app.use("*", (req, res) => {
