@@ -1,0 +1,1504 @@
+{
+  "info": {
+    "name": "NoteAndMore - Events API",
+    "description": "Comprehensive test suite for Events API including create, read, update, delete and attendee management",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "eventId", "value": "", "type": "string" },
+    { "key": "secondEventId", "value": "", "type": "string" },
+    { "key": "complexEventId", "value": "", "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Check that token is set before each request",
+          "const token = pm.collectionVariables.get('token');",
+          "if (!token) {",
+          "    console.log('⚠️ Warning: token is not set. Please set token in collection variables');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// General tests for each request",
+          "pm.test('Response time is reasonable', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "pm.test('Response has JSON format', function () {",
+          "    if (pm.response.code !== 204) { // Not No Content",
+          "        pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+          "    }",
+          "});",
+          "",
+          "// Log request details to console",
+          "const method = pm.request.method;",
+          "const url = pm.request.url.toString().replace(/{{.*?}}/g, (match) => {",
+          "    const varName = match.slice(2, -2);",
+          "    return pm.collectionVariables.get(varName) || match;",
+          "});",
+          "const status = pm.response.status;",
+          "const time = pm.response.responseTime;",
+          "const statusIcon = status < 400 ? '✅' : '❌';",
+          "console.log(`${statusIcon} ${method} ${url} - ${status} (${time}ms)`);"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Create Events",
+      "item": [
+        {
+          "name": "1.1 Create Basic Event - Success",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response has event object', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('event');",
+                  "    pm.expect(responseJson).to.have.property('message');",
+                  "});",
+                  "",
+                  "pm.test('Event has all required fields', function () {",
+                  "    const event = pm.response.json().event;",
+                  "    pm.expect(event).to.have.property('_id');",
+                  "    pm.expect(event).to.have.property('title', 'Team Meeting');",
+                  "    pm.expect(event).to.have.property('startDate');",
+                  "    pm.expect(event).to.have.property('userId');",
+                  "});",
+                  "",
+                  "// Save eventId to global variable",
+                  "const event = pm.response.json().event;",
+                  "pm.collectionVariables.set('eventId', event._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Team Meeting\",\n  \"description\": \"Weekly development team meeting\",\n  \"startDate\": \"2024-12-25T10:00:00.000Z\",\n  \"endDate\": \"2024-12-25T11:00:00.000Z\",\n  \"allDay\": false,\n  \"location\": {\n    \"name\": \"Meeting Room A\",\n    \"address\": \"1 Herzl St, Tel Aviv\"\n  },\n  \"color\": \"#FF5722\",\n  \"category\": \"Work\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"]
+            }
+          }
+        },
+        {
+          "name": "1.2 Create Event with Recurrence - Success",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Event has recurrence settings', function () {",
+                  "    const event = pm.response.json().event;",
+                  "    pm.expect(event.recurrence.type).to.eql('weekly');",
+                  "    pm.expect(event.recurrence.interval).to.eql(1);",
+                  "    pm.expect(event.recurrence.daysOfWeek).to.include(1);",
+                  "});",
+                  "",
+                  "// Save second eventId to global variable",
+                  "const event = pm.response.json().event;",
+                  "pm.collectionVariables.set('secondEventId', event._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Workout Session\",\n  \"startDate\": \"2024-12-23T07:00:00.000Z\",\n  \"endDate\": \"2024-12-23T08:00:00.000Z\",\n  \"recurrence\": {\n    \"type\": \"weekly\",\n    \"interval\": 1,\n    \"daysOfWeek\": [1, 3, 5],\n    \"endDate\": \"2025-03-23T08:00:00.000Z\"\n  },\n  \"category\": \"Health\",\n  \"reminders\": [\n    {\n      \"type\": \"notification\",\n      \"minutesBefore\": 30\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"]
+            }
+          }
+        },
+        {
+          "name": "1.3 Create All-Day Event - Success",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Event is all day', function () {",
+                  "    const event = pm.response.json().event;",
+                  "    pm.expect(event.allDay).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Birthday Celebration\",\n  \"startDate\": \"2024-12-30T00:00:00.000Z\",\n  \"allDay\": true,\n  \"category\": \"Personal\",\n  \"color\": \"#E91E63\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"]
+            }
+          }
+        },
+        {
+          "name": "1.4 Error - Empty Title",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error message about title', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.error).to.eql('Validation failed');",
+                  "    pm.expect(responseJson.details).to.include('Event title is required');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"\",\n  \"startDate\": \"2024-12-25T10:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"]
+            }
+          }
+        },
+        {
+          "name": "1.5 Error - Invalid Date",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error message about date', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.error).to.eql('Validation failed');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Event with Invalid Date\",\n  \"startDate\": \"invalid-date\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"]
+            }
+          }
+        },
+        {
+          "name": "1.6 Error - End Date Before Start",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error message about end date', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.details).to.include('End date must be after start date');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Event with Wrong Dates\",\n  \"startDate\": \"2024-12-25T10:00:00.000Z\",\n  \"endDate\": \"2024-12-25T09:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Get Events List",
+      "item": [
+        {
+          "name": "2.1 Get All Events",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has events array', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('events');",
+                  "    pm.expect(responseJson.events).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Events are sorted by startDate', function () {",
+                  "    const events = pm.response.json().events;",
+                  "    if (events.length > 1) {",
+                  "        for (let i = 1; i < events.length; i++) {",
+                  "            pm.expect(new Date(events[i].startDate)).to.be.at.least(new Date(events[i-1].startDate));",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"]
+            }
+          }
+        },
+        {
+          "name": "2.2 Filter by Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('All events belong to work category', function () {",
+                  "    const events = pm.response.json().events;",
+                  "    events.forEach(event => {",
+                  "        pm.expect(event.category.toLowerCase()).to.include('work');",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events?category=work",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "work"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.3 Filter by Date Range",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Events are within date range', function () {",
+                  "    const events = pm.response.json().events;",
+                  "    const startDate = new Date('2024-12-23');",
+                  "    const endDate = new Date('2024-12-31');",
+                  "    ",
+                  "    events.forEach(event => {",
+                  "        const eventDate = new Date(event.startDate);",
+                  "        pm.expect(eventDate).to.be.at.least(startDate);",
+                  "        pm.expect(eventDate).to.be.at.most(endDate);",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events?startDate=2024-12-23T00:00:00.000Z&endDate=2024-12-31T23:59:59.000Z",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2024-12-23T00:00:00.000Z"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-12-31T23:59:59.000Z"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.4 Error - Invalid Date in Query",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error message about invalid date', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.error).to.eql('Validation failed');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events?startDate=invalid-date",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "invalid-date"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Calendar Views",
+      "item": [
+        {
+          "name": "3.1 Upcoming Events (7 Days)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has events and count', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('events');",
+                  "    pm.expect(responseJson).to.have.property('count');",
+                  "});",
+                  "",
+                  "pm.test('All events are scheduled and upcoming', function () {",
+                  "    const events = pm.response.json().events;",
+                  "    const now = new Date();",
+                  "    const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);",
+                  "    ",
+                  "    events.forEach(event => {",
+                  "        pm.expect(event.status).to.eql('scheduled');",
+                  "        const eventDate = new Date(event.startDate);",
+                  "        pm.expect(eventDate).to.be.at.least(now);",
+                  "        pm.expect(eventDate).to.be.at.most(nextWeek);",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/upcoming",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "upcoming"]
+            }
+          }
+        },
+        {
+          "name": "3.2 Events for December 2024",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has calendar structure', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('events');",
+                  "    pm.expect(responseJson).to.have.property('month', 12);",
+                  "    pm.expect(responseJson).to.have.property('year', 2024);",
+                  "    pm.expect(responseJson).to.have.property('totalEvents');",
+                  "});",
+                  "",
+                  "pm.test('All events are in December 2024', function () {",
+                  "    const events = pm.response.json().events;",
+                  "    events.forEach(event => {",
+                  "        const eventDate = new Date(event.startDate);",
+                  "        pm.expect(eventDate.getFullYear()).to.eql(2024);",
+                  "        pm.expect(eventDate.getMonth()).to.be.within(10, 11); // November or December (spanning events)",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/calendar/2024/12",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "calendar", "2024", "12"]
+            }
+          }
+        },
+        {
+          "name": "3.3 Error - Invalid Month",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error message about invalid date', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.error).to.eql('Invalid date');",
+                  "    pm.expect(responseJson.details).to.include('valid year and month');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/calendar/2024/13",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "calendar", "2024", "13"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Get Single Event",
+      "item": [
+        {
+          "name": "4.1 Get Event by ID - Success",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has event object', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('event');",
+                  "});",
+                  "",
+                  "pm.test('Event ID matches requested ID', function () {",
+                  "    const event = pm.response.json().event;",
+                  "    const requestedId = pm.collectionVariables.get('eventId');",
+                  "    pm.expect(event._id).to.eql(requestedId);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{eventId}}"]
+            }
+          }
+        },
+        {
+          "name": "4.2 Error - Event Not Found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Error message about not found', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.error).to.eql('Event not found');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/507f1f77bcf86cd799439011",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "507f1f77bcf86cd799439011"]
+            }
+          }
+        },
+        {
+          "name": "4.3 Error - Invalid ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error message about invalid ID', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.error).to.eql('Invalid event ID');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/invalid-id",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "invalid-id"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Update Events",
+      "item": [
+        {
+          "name": "5.1 Update Event - Success",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Event updated successfully', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.message).to.include('updated successfully');",
+                  "    pm.expect(responseJson.event.title).to.eql('Team Meeting - Updated');",
+                  "    pm.expect(responseJson.event.description).to.include('Updated description');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Team Meeting - Updated\",\n  \"description\": \"Updated description for the meeting\",\n  \"color\": \"#4CAF50\",\n  \"location\": {\n    \"name\": \"Meeting Room B\",\n    \"address\": \"5 Weizmann St, Tel Aviv\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{eventId}}"]
+            }
+          }
+        },
+        {
+          "name": "5.2 Error - Update with Wrong Dates",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error message about dates', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.details).to.include('End date must be after start date');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startDate\": \"2024-12-25T12:00:00.000Z\",\n  \"endDate\": \"2024-12-25T10:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{eventId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Attendee Management",
+      "item": [
+        {
+          "name": "6.1 Add Attendee - Success",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Attendee added successfully', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.message).to.include('Attendee added successfully');",
+                  "});",
+                  "",
+                  "pm.test('Event has new attendee', function () {",
+                  "    const event = pm.response.json().event;",
+                  "    const attendees = event.attendees;",
+                  "    const newAttendee = attendees.find(a => a.email === 'john.doe@example.com');",
+                  "    pm.expect(newAttendee).to.not.be.undefined;",
+                  "    pm.expect(newAttendee.name).to.eql('John Doe');",
+                  "    pm.expect(newAttendee.status).to.eql('pending');",
+                  "});",
+                  "",
+                  "pm.test('Attendee email normalized', function () {",
+                  "    const event = pm.response.json().event;",
+                  "    const attendee = event.attendees.find(a => a.email === 'john.doe@example.com');",
+                  "    pm.expect(attendee.email).to.eql('john.doe@example.com'); // lowercase",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"John.Doe@Example.com\",\n  \"name\": \"John Doe\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}/attendees",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{eventId}}", "attendees"]
+            }
+          }
+        },
+        {
+          "name": "6.2 Add Second Attendee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Second attendee added', function () {",
+                  "    const event = pm.response.json().event;",
+                  "    pm.expect(event.attendees.length).to.be.at.least(2);",
+                  "    const secondAttendee = event.attendees.find(a => a.email === 'jane.smith@company.com');",
+                  "    pm.expect(secondAttendee).to.not.be.undefined;",
+                  "    pm.expect(secondAttendee.name).to.eql('Jane Smith');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"jane.smith@company.com\",\n  \"name\": \"Jane Smith\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}/attendees",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{eventId}}", "attendees"]
+            }
+          }
+        },
+        {
+          "name": "6.3 Error - Invalid Email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error message about email', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.error).to.eql('Validation failed');",
+                  "    pm.expect(responseJson.details).to.include('Valid email is required');",
+                  "});",
+                  "",
+                  "pm.test('No event modification on error', function () {",
+                  "    pm.expect(pm.response.json()).to.not.have.property('event');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"invalid-email-format\",\n  \"name\": \"Invalid User\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}/attendees",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{eventId}}", "attendees"]
+            }
+          }
+        },
+        {
+          "name": "6.4 Error - Empty Name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error message about name', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.error).to.eql('Validation failed');",
+                  "    pm.expect(responseJson.details).to.include('Name is required');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"name\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}/attendees",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{eventId}}", "attendees"]
+            }
+          }
+        },
+        {
+          "name": "6.5 Add Existing Attendee (Should Fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Error message about existing attendee', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.error).to.include('attendee already exists');",
+                  "    pm.expect(responseJson.details).to.include('attendee already added');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"name\": \"John Doe Duplicate\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}/attendees",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{eventId}}", "attendees"]
+            }
+          }
+        },
+        {
+          "name": "6.6 Check Event Attendees",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Event has multiple attendees', function () {",
+                  "    const event = pm.response.json().event;",
+                  "    pm.expect(event.attendees).to.be.an('array');",
+                  "    pm.expect(event.attendees.length).to.be.at.least(2);",
+                  "});",
+                  "",
+                  "pm.test('All attendees have required fields', function () {",
+                  "    const event = pm.response.json().event;",
+                  "    event.attendees.forEach(attendee => {",
+                  "        pm.expect(attendee).to.have.property('email');",
+                  "        pm.expect(attendee).to.have.property('name');",
+                  "        pm.expect(attendee).to.have.property('status');",
+                  "        pm.expect(['pending', 'accepted', 'declined']).to.include(attendee.status);",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{eventId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Delete Events",
+      "item": [
+        {
+          "name": "7.1 Delete Event - Success",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Event deleted successfully', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.message).to.include('deleted successfully');",
+                  "    pm.expect(responseJson).to.have.property('event');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{secondEventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{secondEventId}}"]
+            }
+          }
+        },
+        {
+          "name": "7.2 Error - Delete Nonexistent Event",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Error message about not found', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.error).to.eql('Event not found');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/507f1f77bcf86cd799439011",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "507f1f77bcf86cd799439011"]
+            }
+          }
+        },
+        {
+          "name": "7.3 Error - Invalid ID for Deletion",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error message about invalid ID', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.error).to.eql('Invalid event ID');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/invalid-id",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "invalid-id"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Edge Cases & Integration",
+      "item": [
+        {
+          "name": "8.1 Create Event With All Features",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Event has all features', function () {",
+                  "    const event = pm.response.json().event;",
+                  "    pm.expect(event).to.have.property('attendees');",
+                  "    pm.expect(event).to.have.property('reminders');",
+                  "    pm.expect(event).to.have.property('location');",
+                  "    pm.expect(event).to.have.property('recurrence');",
+                  "    pm.expect(event.attendees.length).to.be.greaterThan(0);",
+                  "    pm.expect(event.reminders.length).to.be.greaterThan(0);",
+                  "});",
+                  "",
+                  "// Save ID for further tests",
+                  "const event = pm.response.json().event;",
+                  "pm.collectionVariables.set('complexEventId', event._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Complex Event With All Features\",\n  \"description\": \"Full event with attendees, reminders and recurrence\",\n  \"startDate\": \"2024-12-28T14:00:00.000Z\",\n  \"endDate\": \"2024-12-28T16:00:00.000Z\",\n  \"allDay\": false,\n  \"location\": {\n    \"name\": \"Conference Center\",\n    \"address\": \"10 HaDfus St, Jerusalem\",\n    \"coordinates\": {\n      \"lat\": 31.7683,\n      \"lng\": 35.2137\n    }\n  },\n  \"recurrence\": {\n    \"type\": \"monthly\",\n    \"interval\": 1,\n    \"endDate\": \"2025-06-28T16:00:00.000Z\"\n  },\n  \"reminders\": [\n    {\n      \"type\": \"email\",\n      \"minutesBefore\": 1440\n    },\n    {\n      \"type\": \"notification\",\n      \"minutesBefore\": 30\n    }\n  ],\n  \"attendees\": [\n    {\n      \"email\": \"manager@company.com\",\n      \"name\": \"Project Manager\",\n      \"status\": \"accepted\"\n    },\n    {\n      \"email\": \"developer@company.com\",\n      \"name\": \"Lead Developer\",\n      \"status\": \"pending\"\n    }\n  ],\n  \"color\": \"#9C27B0\",\n  \"category\": \"Projects\",\n  \"status\": \"scheduled\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"]
+            }
+          }
+        },
+        {
+          "name": "8.2 Check Deleted Event",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Deleted event not found', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.error).to.eql('Event not found');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{secondEventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{secondEventId}}"]
+            }
+          }
+        },
+        {
+          "name": "8.3 Create Event With Max Title Length",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Long title accepted', function () {",
+                  "    const event = pm.response.json().event;",
+                  "    pm.expect(event.title.length).to.be.at.most(200);",
+                  "});",
+                  "",
+                  "pm.test('Event created with boundary values', function () {",
+                  "    const event = pm.response.json().event;",
+                  "    pm.expect(event).to.have.property('_id');",
+                  "    pm.expect(event.category).to.eql('Tests');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"This is an event with a very long title intended to test the system boundaries and ensure it properly handles maximum text field lengths as defined in the Mongo schema and Express validation\",\n  \"startDate\": \"2024-12-29T10:00:00.000Z\",\n  \"description\": \"System boundary test with long text\",\n  \"category\": \"Tests\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"]
+            }
+          }
+        },
+        {
+          "name": "8.4 Error - Title Too Long",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error message about title length', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.error).to.eql('Validation failed');",
+                  "    pm.expect(responseJson.details).to.include('cannot exceed 200 characters');",
+                  "});",
+                  "",
+                  "pm.test('No event created on validation error', function () {",
+                  "    pm.expect(pm.response.json()).to.not.have.property('event');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"This is an event with a very long title that exceeds the allowed limits in the system and is intended to test the system's response to edge cases when data exceeds the constraints defined in the schema and server validation, ensuring the system behaves correctly even in cases of incorrect usage and advanced boundary tests aimed at finding bugs in the system\",\n  \"startDate\": \"2024-12-29T10:00:00.000Z\",\n  \"category\": \"Failed Tests\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"]
+            }
+          }
+        },
+        {
+          "name": "8.5 Performance Test - Bulk Creation",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Check response time for bulk events",
+                  "pm.globals.set('testStartTime', Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response time acceptable for batch creation', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "",
+                  "pm.test('Event created with unique properties', function () {",
+                  "    const event = pm.response.json().event;",
+                  "    pm.expect(event.title).to.include('Performance Test Event');",
+                  "    pm.expect(event.category).to.eql('Performance Tests');",
+                  "});",
+                  "",
+                  "// Calculate total time",
+                  "const startTime = pm.globals.get('testStartTime');",
+                  "const totalTime = Date.now() - startTime;",
+                  "console.log(`Total time for creating event: ${totalTime}ms`);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"אירוע בדיקת ביצועים\",\n  \"description\": \"בדיקת זמני תגובה למערכת\",\n  \"startDate\": \"2024-12-30T12:00:00.000Z\",\n  \"endDate\": \"2024-12-30T13:00:00.000Z\",\n  \"category\": \"בדיקות ביצועים\",\n  \"color\": \"#FF9800\",\n  \"location\": {\n    \"name\": \"מעבדת בדיקות\",\n    \"address\": \"רחוב הטכנולוגיה 15, תל אביב\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"]
+            }
+          }
+        },
+        {
+          "name": "8.6 Summary - Event Count and Statistics",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Events collection summary', function () {",
+                  "    const events = pm.response.json().events;",
+                  "    console.log(`\\n=== Summary of Events API Tests ===`);",
+                  "    console.log(`Total events in system: ${events.length}`);",
+                  "    ",
+                  "    // Count by categories",
+                  "    const categories = {};",
+                  "    events.forEach(event => {",
+                  "        categories[event.category] = (categories[event.category] || 0) + 1;",
+                  "    });",
+                  "    console.log('\\nCount by Categories:');",
+                  "    Object.entries(categories).forEach(([category, count]) => {",
+                  "        console.log(`  ${category}: ${count} events`);",
+                  "    });",
+                  "    ",
+                  "    // Count by status",
+                  "    const statuses = {};",
+                  "    events.forEach(event => {",
+                  "        statuses[event.status] = (statuses[event.status] || 0) + 1;",
+                  "    });",
+                  "    console.log('\\nCount by Status:');",
+                  "    Object.entries(statuses).forEach(([status, count]) => {",
+                  "        console.log(`  ${status}: ${count} events`);",
+                  "    });",
+                  "    ",
+                  "    // Check events with attendees",
+                  "    const eventsWithAttendees = events.filter(e => e.attendees && e.attendees.length > 0);",
+                  "    console.log(`\\nEvents with Attendees: ${eventsWithAttendees.length}`);",
+                  "    ",
+                  "    // Check events with reminders",
+                  "    const eventsWithReminders = events.filter(e => e.reminders && e.reminders.length > 0);",
+                  "    console.log(`Events with Reminders: ${eventsWithReminders.length}`);",
+                  "    ",
+                  "    // Check recurring events",
+                  "    const recurringEvents = events.filter(e => e.recurrence && e.recurrence.type !== 'none');",
+                  "    console.log(`Recurring Events: ${recurringEvents.length}`);",
+                  "    ",
+                  "    console.log('\\n=== End of Tests ===\\n');",
+                  "    ",
+                  "    pm.expect(events.length).to.be.greaterThan(0);",
+                  "    pm.expect(Object.keys(categories).length).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"]
+            }
+          }
+        },
+        {
+          "name": "8.7 Cleanup - Delete Complex Event",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Complex event deleted successfully', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.message).to.include('deleted successfully');",
+                  "});",
+                  "",
+                  "pm.test('Cleanup completed', function () {",
+                  "    console.log('Cleanup complete - complex event deleted');",
+                  "    pm.expect(pm.response.json()).to.have.property('event');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/{{complexEventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "{{complexEventId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Check that token is set before each request",
+          "const token = pm.collectionVariables.get('token');",
+          "if (!token) {",
+          "    console.log('⚠️ Warning: token is not set. Please set token in collection variables');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// General tests for each request",
+          "pm.test('Response time is reasonable', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "pm.test('Response has JSON format', function () {",
+          "    if (pm.response.code !== 204) { // Not No Content",
+          "        pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+          "    }",
+          "});",
+          "",
+          "// Log request details to console",
+          "const method = pm.request.method;",
+          "const url = pm.request.url.toString().replace(/{{.*?}}/g, (match) => {",
+          "    const varName = match.slice(2, -2);",
+          "    return pm.collectionVariables.get(varName) || match;",
+          "});",
+          "const status = pm.response.status;",
+          "const time = pm.response.responseTime;",
+          "const statusIcon = status < 400 ? '✅' : '❌';",
+          "console.log(`${statusIcon} ${method} ${url} - ${status} (${time}ms)`);"
+        ]
+      }
+    }
+  ]
+}

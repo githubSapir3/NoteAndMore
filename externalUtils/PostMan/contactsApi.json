@@ -1,0 +1,1280 @@
+{
+  "info": {
+    "name": "Contacts API Tests",
+    "description": "בדיקות מקיפות לכל המטודות ב-Contacts API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api/contacts",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "contactId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Create Contacts",
+      "item": [
+        {
+          "name": "Create Contact - Full Details",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Contact created successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.eql('Contact created successfully');",
+                  "    pm.expect(jsonData.contact).to.have.property('_id');",
+                  "    pm.expect(jsonData.contact.firstName).to.eql('John');",
+                  "    pm.expect(jsonData.contact.lastName).to.eql('Doe');",
+                  "});",
+                  "",
+                  "pm.test('Save contact ID for future requests', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('contactId', jsonData.contact._id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"nickname\": \"Johnny\",\n  \"phones\": [\n    {\n      \"number\": \"+1-555-123-4567\",\n      \"type\": \"mobile\",\n      \"primary\": true\n    },\n    {\n      \"number\": \"+1-555-987-6543\",\n      \"type\": \"work\",\n      \"primary\": false\n    }\n  ],\n  \"emails\": [\n    {\n      \"address\": \"john.doe@example.com\",\n      \"type\": \"personal\",\n      \"primary\": true\n    },\n    {\n      \"address\": \"john.doe@company.com\",\n      \"type\": \"work\",\n      \"primary\": false\n    }\n  ],\n  \"address\": {\n    \"street\": \"123 Main Street\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"zipCode\": \"10001\",\n    \"country\": \"USA\"\n  },\n  \"company\": {\n    \"name\": \"Tech Corp\",\n    \"position\": \"Software Engineer\",\n    \"department\": \"Engineering\"\n  },\n  \"socialMedia\": {\n    \"linkedin\": \"linkedin.com/in/johndoe\",\n    \"twitter\": \"@johndoe\"\n  },\n  \"notes\": \"Great colleague and friend\",\n  \"tags\": [\"work\", \"friend\", \"tech\"],\n  \"priority\": \"high\",\n  \"birthday\": \"1990-05-15T00:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": ["{{baseUrl}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Contact - Minimal (Names Only)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Minimal contact created', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.contact.firstName).to.eql('Jane');",
+                  "    pm.expect(jsonData.contact.lastName).to.eql('Smith');",
+                  "    pm.expect(jsonData.contact.priority).to.eql('medium'); // default",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Smith\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": ["{{baseUrl}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Contact - Missing First Name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Validation error for missing first name', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error).to.eql('Validation failed');",
+                  "    pm.expect(jsonData.details).to.include('First name is required');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lastName\": \"InvalidContact\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": ["{{baseUrl}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Contact - Invalid Email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Validation error for invalid email', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error).to.eql('Validation failed');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\",\n  \"emails\": [\n    {\n      \"address\": \"invalid-email\",\n      \"type\": \"personal\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": ["{{baseUrl}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Contact - No Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Unauthorized\",\n  \"lastName\": \"Contact\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": ["{{baseUrl}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Get Contacts",
+      "item": [
+        {
+          "name": "Get All Contacts - Default",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response structure is correct', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('contacts');",
+                  "    pm.expect(jsonData).to.have.property('pagination');",
+                  "    pm.expect(jsonData.contacts).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Pagination info is present', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.pagination).to.have.property('currentPage');",
+                  "    pm.expect(jsonData.pagination).to.have.property('totalPages');",
+                  "    pm.expect(jsonData.pagination).to.have.property('totalContacts');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": ["{{baseUrl}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Contacts - With Pagination",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Pagination applied correctly', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.pagination.currentPage).to.eql(1);",
+                  "    pm.expect(jsonData.pagination.limit).to.eql(5);",
+                  "    pm.expect(jsonData.contacts.length).to.be.at.most(5);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}?page=1&limit=5",
+              "host": ["{{baseUrl}}"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Contacts - Search by Name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Search functionality works', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.contacts.length > 0) {",
+                  "        const contact = jsonData.contacts[0];",
+                  "        const searchTerm = 'John';",
+                  "        const hasMatch = contact.firstName.includes(searchTerm) || ",
+                  "                        contact.lastName.includes(searchTerm);",
+                  "        pm.expect(hasMatch).to.be.true;",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}?search=John",
+              "host": ["{{baseUrl}}"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "John"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Contacts - Filter by Priority",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Priority filter applied', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.contacts.length > 0) {",
+                  "        jsonData.contacts.forEach(contact => {",
+                  "            pm.expect(contact.priority).to.eql('high');",
+                  "        });",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}?priority=high",
+              "host": ["{{baseUrl}}"],
+              "query": [
+                {
+                  "key": "priority",
+                  "value": "high"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Contacts - Sort by Last Name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}?sortBy=lastName&sortOrder=asc",
+              "host": ["{{baseUrl}}"],
+              "query": [
+                {
+                  "key": "sortBy",
+                  "value": "lastName"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "asc"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Get Single Contact",
+      "item": [
+        {
+          "name": "Get Contact by ID - Success",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Contact data structure is correct', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('contact');",
+                  "    pm.expect(jsonData.contact).to.have.property('_id');",
+                  "    pm.expect(jsonData.contact).to.have.property('firstName');",
+                  "    pm.expect(jsonData.contact).to.have.property('lastName');",
+                  "    pm.expect(jsonData.contact).to.have.property('phones');",
+                  "    pm.expect(jsonData.contact).to.have.property('emails');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/{{contactId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{contactId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Contact by ID - Invalid ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Invalid ID error message', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error).to.eql('Invalid contact ID');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invalid-id",
+              "host": ["{{baseUrl}}"],
+              "path": ["invalid-id"]
+            }
+          }
+        },
+        {
+          "name": "Get Contact by ID - Not Found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Contact not found error', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error).to.eql('Contact not found');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/507f1f77bcf86cd799439011",
+              "host": ["{{baseUrl}}"],
+              "path": ["507f1f77bcf86cd799439011"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Update Contact",
+      "item": [
+        {
+          "name": "Update Contact - Success",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Contact updated successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.eql('Contact updated successfully');",
+                  "    pm.expect(jsonData.contact.firstName).to.eql('John Updated');",
+                  "    pm.expect(jsonData.contact.priority).to.eql('medium');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John Updated\",\n  \"lastName\": \"Doe\",\n  \"priority\": \"medium\",\n  \"notes\": \"Updated contact information\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{contactId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{contactId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Contact - Add Phone",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Phone added successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.contact.phones).to.be.an('array');",
+                  "    pm.expect(jsonData.contact.phones.length).to.be.greaterThan(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John Updated\",\n  \"lastName\": \"Doe\",\n  \"phones\": [\n    {\n      \"number\": \"+1-555-123-4567\",\n      \"type\": \"mobile\",\n      \"primary\": true\n    },\n    {\n      \"number\": \"+1-555-999-8888\",\n      \"type\": \"home\",\n      \"primary\": false\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{contactId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{contactId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Contact - Invalid Priority",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Validation error for invalid priority', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error).to.eql('Validation failed');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"priority\": \"invalid-priority\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{contactId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{contactId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Favorite Management",
+      "item": [
+        {
+          "name": "Toggle Favorite - Add to Favorites",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Contact added to favorites', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include('added to favorites');",
+                  "    pm.expect(jsonData.contact.isFavorite).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/{{contactId}}/favorite",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{contactId}}", "favorite"]
+            }
+          }
+        },
+        {
+          "name": "Toggle Favorite - Remove from Favorites",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Contact removed from favorites', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include('removed from favorites');",
+                  "    pm.expect(jsonData.contact.isFavorite).to.be.false;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/{{contactId}}/favorite",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{contactId}}", "favorite"]
+            }
+          }
+        },
+        {
+          "name": "Get Favorite Contacts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Favorites list structure is correct', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('contacts');",
+                  "    pm.expect(jsonData).to.have.property('count');",
+                  "    pm.expect(jsonData.contacts).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/favorites",
+              "host": ["{{baseUrl}}"],
+              "path": ["favorites"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Call History",
+      "item": [
+        {
+          "name": "Add Call History - Outgoing",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Call history added successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.eql('Call history added successfully');",
+                  "    pm.expect(jsonData.contact.callHistory).to.be.an('array');",
+                  "    pm.expect(jsonData.contact.lastContacted).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"outgoing\",\n  \"duration\": 300,\n  \"notes\": \"Discussed project details\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{contactId}}/call-history",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{contactId}}", "call-history"]
+            }
+          }
+        },
+        {
+          "name": "Add Call History - Missed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Missed call added to history', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.contact.callHistory.length).to.be.greaterThan(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"missed\",\n  \"duration\": 0,\n  \"notes\": \"Call was missed during meeting\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{contactId}}/call-history",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{contactId}}", "call-history"]
+            }
+          }
+        },
+        {
+          "name": "Add Call History - Invalid Type",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Validation error for invalid call type', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error).to.eql('Validation failed');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"invalid-type\",\n  \"duration\": 100\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{contactId}}/call-history",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{contactId}}", "call-history"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Special Lists",
+      "item": [
+        {
+          "name": "Get Recent Contacts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Recent contacts structure is correct', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('contacts');",
+                  "    pm.expect(jsonData).to.have.property('count');",
+                  "    pm.expect(jsonData.contacts).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/recent",
+              "host": ["{{baseUrl}}"],
+              "path": ["recent"]
+            }
+          }
+        },
+        {
+          "name": "Get Birthday Contacts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Birthday contacts structure is correct', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('contacts');",
+                  "    pm.expect(jsonData).to.have.property('count');",
+                  "    pm.expect(jsonData.contacts).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/birthdays",
+              "host": ["{{baseUrl}}"],
+              "path": ["birthdays"]
+            }
+          }
+        },
+        {
+          "name": "Get Contact Statistics",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Statistics structure is correct', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('stats');",
+                  "    pm.expect(jsonData.stats).to.have.property('total');",
+                  "    pm.expect(jsonData.stats).to.have.property('favorites');",
+                  "    pm.expect(jsonData.stats).to.have.property('withPhone');",
+                  "    pm.expect(jsonData.stats).to.have.property('withEmail');",
+                  "    pm.expect(jsonData.stats).to.have.property('withBirthday');",
+                  "    pm.expect(jsonData.stats).to.have.property('highPriority');",
+                  "});",
+                  "",
+                  "pm.test('Statistics are numbers', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.stats.total).to.be.a('number');",
+                  "    pm.expect(jsonData.stats.favorites).to.be.a('number');",
+                  "    pm.expect(jsonData.stats.withPhone).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["stats"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Delete Contact",
+      "item": [
+        {
+          "name": "Delete Contact - Success",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Contact deleted successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.eql('Contact deleted successfully');",
+                  "    pm.expect(jsonData.contact).to.have.property('_id');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/{{contactId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{contactId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Contact - Not Found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Contact not found error', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error).to.eql('Contact not found');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/507f1f77bcf86cd799439011",
+              "host": ["{{baseUrl}}"],
+              "path": ["507f1f77bcf86cd799439011"]
+            }
+          }
+        },
+        {
+          "name": "Delete Contact - Invalid ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Invalid ID error', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error).to.eql('Invalid contact ID');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/invalid-id",
+              "host": ["{{baseUrl}}"],
+              "path": ["invalid-id"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Edge Cases & Integration Tests",
+      "item": [
+        {
+          "name": "Create Contact with Multiple Phones/Emails",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Multiple phones and emails handled correctly', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.contact.phones.length).to.eql(3);",
+                  "    pm.expect(jsonData.contact.emails.length).to.eql(2);",
+                  "    ",
+                  "    // Check that only one phone is primary",
+                  "    const primaryPhones = jsonData.contact.phones.filter(p => p.primary);",
+                  "    pm.expect(primaryPhones.length).to.eql(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Multi\",\n  \"lastName\": \"Contact\",\n  \"phones\": [\n    {\n      \"number\": \"+1-555-111-1111\",\n      \"type\": \"mobile\",\n      \"primary\": true\n    },\n    {\n      \"number\": \"+1-555-222-2222\",\n      \"type\": \"work\",\n      \"primary\": false\n    },\n    {\n      \"number\": \"+1-555-333-3333\",\n      \"type\": \"home\",\n      \"primary\": false\n    }\n  ],\n  \"emails\": [\n    {\n      \"address\": \"multi@personal.com\",\n      \"type\": \"personal\",\n      \"primary\": true\n    },\n    {\n      \"address\": \"multi@work.com\",\n      \"type\": \"work\",\n      \"primary\": false\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": ["{{baseUrl}}"]
+            }
+          }
+        },
+        {
+          "name": "Test Complex Search Query",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Complex search functionality works', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.contacts).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}?search=555&priority=high&limit=10&sortBy=lastName",
+              "host": ["{{baseUrl}}"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "555"
+                },
+                {
+                  "key": "priority",
+                  "value": "high"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "lastName"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
