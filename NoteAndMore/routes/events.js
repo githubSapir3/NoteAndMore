@@ -1,145 +1,17 @@
-const express = require('express');
-const { body, validationResult, query } = require('express-validator');
-const mongoose = require('mongoose');
+// ===== routes/events.js =====
+const express = require("express");
+const { body, validationResult, query } = require("express-validator");
+const Event = require("../models/Event");
 
 const router = express.Router();
-
-// Event Schema (inline for this example - you can move to models/Event.js)
-const eventSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    index: true
-  },
-  title: {
-    type: String,
-    required: [true, 'Event title is required'],
-    trim: true,
-    maxlength: [200, 'Event title cannot exceed 200 characters']
-  },
-  description: {
-    type: String,
-    trim: true,
-    maxlength: [2000, 'Event description cannot exceed 2000 characters']
-  },
-  startDate: {
-    type: Date,
-    required: [true, 'Start date is required'],
-    index: true
-  },
-  endDate: {
-    type: Date,
-    validate: {
-      validator: function(value) {
-        return !value || value >= this.startDate;
-      },
-      message: 'End date must be after start date'
-    }
-  },
-  allDay: {
-    type: Boolean,
-    default: false
-  },
-  location: {
-    name: {
-      type: String,
-      trim: true,
-      maxlength: [200, 'Location name cannot exceed 200 characters']
-    },
-    address: {
-      type: String,
-      trim: true,
-      maxlength: [500, 'Address cannot exceed 500 characters']
-    },
-    coordinates: {
-      lat: { type: Number, min: -90, max: 90 },
-      lng: { type: Number, min: -180, max: 180 }
-    }
-  },
-  recurrence: {
-    type: {
-      type: String,
-      enum: ['none', 'daily', 'weekly', 'monthly', 'yearly'],
-      default: 'none'
-    },
-    interval: {
-      type: Number,
-      min: 1,
-      default: 1
-    },
-    endDate: Date,
-    daysOfWeek: [{
-      type: Number,
-      min: 0,
-      max: 6
-    }]
-  },
-  reminders: [{
-    type: {
-      type: String,
-      enum: ['notification', 'email', 'sms'],
-      default: 'notification'
-    },
-    minutesBefore: {
-      type: Number,
-      min: 0,
-      default: 15
-    },
-    sent: {
-      type: Boolean,
-      default: false
-    }
-  }],
-  attendees: [{
-    email: {
-      type: String,
-      trim: true,
-      lowercase: true
-    },
-    name: {
-      type: String,
-      trim: true
-    },
-    status: {
-      type: String,
-      enum: ['pending', 'accepted', 'declined'],
-      default: 'pending'
-    }
-  }],
-  color: {
-    type: String,
-    default: '#3174ad',
-    match: [/^#[0-9A-Fa-f]{6}$/, 'Color must be a valid hex color']
-  },
-  status: {
-    type: String,
-    enum: ['scheduled', 'completed', 'cancelled'],
-    default: 'scheduled'
-  },
-  category: {
-    type: String,
-    default: 'General',
-    maxlength: [50, 'Category cannot exceed 50 characters']
-  }
-}, {
-  timestamps: true
-});
-
-// Indexes
-eventSchema.index({ userId: 1, startDate: 1 });
-eventSchema.index({ userId: 1, endDate: 1 });
-eventSchema.index({ userId: 1, category: 1 });
-
-const Event = mongoose.model('Event', eventSchema);
 
 // Helper function for validation errors
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({
-      error: 'Validation failed',
-      details: errors.array().map(error => error.msg)
+      error: "Validation failed",
+      details: errors.array().map((error) => error.msg),
     });
   }
   next();
@@ -147,138 +19,348 @@ const handleValidationErrors = (req, res, next) => {
 
 // Validation rules
 const validateEvent = [
-  body('title')
+  body("title")
     .trim()
     .notEmpty()
-    .withMessage('Event title is required')
+    .withMessage("Event title is required")
     .isLength({ max: 200 })
-    .withMessage('Event title cannot exceed 200 characters'),
-  body('description')
+    .withMessage("Event title cannot exceed 200 characters"),
+  body("description")
     .optional()
     .trim()
     .isLength({ max: 2000 })
-    .withMessage('Event description cannot exceed 2000 characters'),
-  body('startDate')
-    .isISO8601()
-    .withMessage('Start date must be a valid date'),
-  body('endDate')
+    .withMessage("Event description cannot exceed 2000 characters"),
+  body("startDate")
     .optional()
-    .isISO8601()
-    .withMessage('End date must be a valid date'),
-  body('allDay')
+    .custom((value) => {
+      if (value && !Date.parse(value)) {
+        throw new Error("Start date must be a valid date");
+      }
+      return true;
+    }),
+  body("endDate")
+    .optional()
+    .custom((value) => {
+      if (value && !Date.parse(value)) {
+        throw new Error("End date must be a valid date");
+      }
+      return true;
+    }),
+  body("allDay")
     .optional()
     .isBoolean()
-    .withMessage('All day must be a boolean'),
-  body('location.name')
+    .withMessage("All day must be a boolean"),
+  body("location.name")
     .optional()
     .trim()
     .isLength({ max: 200 })
-    .withMessage('Location name cannot exceed 200 characters'),
-  body('color')
+    .withMessage("Location name cannot exceed 200 characters"),
+  body("color")
     .optional()
     .matches(/^#[0-9A-Fa-f]{6}$/)
-    .withMessage('Color must be a valid hex color'),
-  body('recurrence.type')
+    .withMessage("Color must be a valid hex color"),
+  body("recurrence.type")
     .optional()
-    .isIn(['none', 'daily', 'weekly', 'monthly', 'yearly'])
-    .withMessage('Invalid recurrence type')
+    .isIn(["none", "daily", "weekly", "monthly", "yearly"])
+    .withMessage("Invalid recurrence type"),
 ];
 
-// @route   GET /api/events
-// @desc    Get all events for user with filtering
-// @access  Private
-router.get('/', [
-  query('startDate').optional().isISO8601().withMessage('Start date must be valid'),
-  query('endDate').optional().isISO8601().withMessage('End date must be valid'),
-  query('category').optional().trim(),
-  query('status').optional().isIn(['scheduled', 'completed', 'cancelled'])
-], handleValidationErrors, async (req, res) => {
+/**
+ * @swagger
+ * /api/events:
+ *   get:
+ *     summary: Get all events for the authenticated user
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Filter events starting from this date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Filter events ending before this date
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [scheduled, completed, cancelled]
+ *     responses:
+ *       200:
+ *         description: Events list returned
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Server error
+ */
+router.get(
+  "/",
+  [
+    query("startDate")
+      .optional()
+      .isISO8601()
+      .withMessage("Start date must be valid"),
+    query("endDate")
+      .optional()
+      .isISO8601()
+      .withMessage("End date must be valid"),
+    query("category").optional().trim(),
+    query("status").optional().isIn(["scheduled", "completed", "cancelled"]),
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const { startDate, endDate, category, status = "scheduled" } = req.query;
+
+      // Build filter
+      const filter = { userId: req.user._id, status };
+
+      // Date range filter
+      if (startDate || endDate) {
+        filter.startDate = {};
+        if (startDate) filter.startDate.$gte = new Date(startDate);
+        if (endDate) filter.startDate.$lte = new Date(endDate);
+      }
+
+      if (category) {
+        filter.category = new RegExp(category, "i");
+      }
+
+      const events = await Event.find(filter).sort({ startDate: 1 }).lean();
+
+      res.json({ events });
+    } catch (error) {
+      console.error("Get events error:", error);
+      res.status(500).json({
+        error: "Server error",
+        details: "Failed to fetch events",
+      });
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /api/events/upcoming:
+ *   get:
+ *     summary: Get upcoming events
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: days
+ *         schema:
+ *           type: integer
+ *         description: Number of days ahead to include (default 7)
+ *     responses:
+ *       200:
+ *         description: Upcoming events returned
+ *       500:
+ *         description: Server error
+ */
+router.get("/upcoming", async (req, res) => {
   try {
-    const {
-      startDate,
-      endDate,
-      category,
-      status = 'scheduled'
-    } = req.query;
+    const { days = 7 } = req.query;
+    const events = await Event.findUpcoming(req.user._id, parseInt(days));
 
-    // Build filter
-    const filter = { userId: req.user._id, status };
-
-    // Date range filter
-    if (startDate || endDate) {
-      filter.startDate = {};
-      if (startDate) filter.startDate.$gte = new Date(startDate);
-      if (endDate) filter.startDate.$lte = new Date(endDate);
-    }
-
-    if (category) {
-      filter.category = new RegExp(category, 'i');
-    }
-
-    const events = await Event.find(filter)
-      .sort({ startDate: 1 })
-      .lean();
-
-    res.json({ events });
-
+    res.json({
+      events,
+      count: events.length,
+    });
   } catch (error) {
-    console.error('Get events error:', error);
+    console.error("Get upcoming events error:", error);
     res.status(500).json({
-      error: 'Server error',
-      details: 'Failed to fetch events'
+      error: "Server error",
+      details: "Failed to fetch upcoming events",
     });
   }
 });
 
-// @route   GET /api/events/:id
-// @desc    Get single event
-// @access  Private
-router.get('/:id', async (req, res) => {
+/**
+ * @swagger
+ * /api/events/calendar/{year}/{month}:
+ *   get:
+ *     summary: Get calendar events for a specific month
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: year
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: path
+ *         name: month
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Events for the requested month
+ *       400:
+ *         description: Invalid parameters
+ *       500:
+ *         description: Server error
+ */
+router.get("/calendar/:year/:month", async (req, res) => {
+  try {
+    const { year, month } = req.params;
+
+    // Validate year and month
+    const yearNum = parseInt(year);
+    const monthNum = parseInt(month);
+
+    if (yearNum < 1900 || yearNum > 2100 || monthNum < 1 || monthNum > 12) {
+      return res.status(400).json({
+        error: "Invalid date",
+        details: "Please provide valid year and month",
+      });
+    }
+
+    const events = await Event.findByMonth(req.user._id, yearNum, monthNum);
+
+    res.json({
+      events,
+      month: monthNum,
+      year: yearNum,
+      totalEvents: events.length,
+    });
+  } catch (error) {
+    console.error("Get calendar events error:", error);
+    res.status(500).json({
+      error: "Server error",
+      details: "Failed to fetch calendar events",
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/events/{id}:
+ *   get:
+ *     summary: Get a single event by ID
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Event ID
+ *     responses:
+ *       200:
+ *         description: Event returned
+ *       400:
+ *         description: Invalid ID
+ *       404:
+ *         description: Event not found
+ *       500:
+ *         description: Server error
+ */
+router.get("/:id", async (req, res) => {
   try {
     const event = await Event.findOne({
       _id: req.params.id,
-      userId: req.user._id
+      userId: req.user._id,
     });
 
     if (!event) {
       return res.status(404).json({
-        error: 'Event not found',
-        details: 'Event not found or access denied'
+        error: "Event not found",
+        details: "Event not found or access denied",
       });
     }
 
     res.json({ event });
-
   } catch (error) {
-    console.error('Get event error:', error);
-    if (error.name === 'CastError') {
+    console.error("Get event error:", error);
+    if (error.name === "CastError") {
       return res.status(400).json({
-        error: 'Invalid event ID',
-        details: 'Please provide a valid event ID'
+        error: "Invalid event ID",
+        details: "Please provide a valid event ID",
       });
     }
     res.status(500).json({
-      error: 'Server error',
-      details: 'Failed to fetch event'
+      error: "Server error",
+      details: "Failed to fetch event",
     });
   }
 });
 
-// @route   POST /api/events
-// @desc    Create new event
-// @access  Private
-router.post('/', validateEvent, handleValidationErrors, async (req, res) => {
+/**
+ * @swagger
+ * /api/events:
+ *   post:
+ *     summary: Create a new event
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               startDate:
+ *                 type: string
+ *                 format: date-time
+ *               endDate:
+ *                 type: string
+ *                 format: date-time
+ *               allDay:
+ *                 type: boolean
+ *               location:
+ *                 type: object
+ *               color:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Event created
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Server error
+ */
+router.post("/", validateEvent, handleValidationErrors, async (req, res) => {
   try {
     const eventData = {
       ...req.body,
-      userId: req.user._id
+      userId: req.user._id,
     };
 
+    // Set default dates if not provided or invalid
+    if (!eventData.startDate || !Date.parse(eventData.startDate)) {
+      eventData.startDate = new Date(); // Today
+    }
+
+    if (!eventData.endDate || !Date.parse(eventData.endDate)) {
+      eventData.endDate = new Date(Date.now() + 24 * 60 * 60 * 1000); // Tomorrow
+    }
+
     // Validate end date is after start date
-    if (eventData.endDate && new Date(eventData.endDate) < new Date(eventData.startDate)) {
+    if (new Date(eventData.endDate) < new Date(eventData.startDate)) {
       return res.status(400).json({
-        error: 'Invalid dates',
-        details: 'End date must be after start date'
+        error: "Invalid dates",
+        details: "End date must be after start date",
       });
     }
 
@@ -286,245 +368,314 @@ router.post('/', validateEvent, handleValidationErrors, async (req, res) => {
     await event.save();
 
     res.status(201).json({
-      message: 'Event created successfully',
-      event
+      message: "Event created successfully",
+      event,
     });
-
   } catch (error) {
-    console.error('Create event error:', error);
+    console.error("Create event error:", error);
     res.status(500).json({
-      error: 'Server error',
-      details: 'Failed to create event'
+      error: "Server error",
+      details: "Failed to create event",
     });
   }
 });
 
-// @route   PUT /api/events/:id
-// @desc    Update event
-// @access  Private
-router.put('/:id', validateEvent, handleValidationErrors, async (req, res) => {
+// Note: validation for event fields is applied via validateEvent
+/**
+ * @swagger
+ * /api/events/{id}:
+ *   put:
+ *     summary: Update an existing event
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Event updated successfully
+ *       400:
+ *         description: Validation error or invalid ID
+ *       404:
+ *         description: Event not found
+ *       500:
+ *         description: Server error
+ */
+router.put("/:id", validateEvent, handleValidationErrors, async (req, res) => {
   try {
-    // Validate end date is after start date if both provided
-    if (req.body.endDate && req.body.startDate) {
-      if (new Date(req.body.endDate) < new Date(req.body.startDate)) {
+    const updateData = { ...req.body };
+
+    // רק אם יש תאריכים - בדוק אותם
+    if (updateData.startDate && updateData.endDate) {
+      if (new Date(updateData.endDate) < new Date(updateData.startDate)) {
         return res.status(400).json({
-          error: 'Invalid dates',
-          details: 'End date must be after start date'
+          error: "Invalid dates",
+          details: "End date must be after start date",
         });
       }
     }
 
     const event = await Event.findOneAndUpdate(
       { _id: req.params.id, userId: req.user._id },
-      { $set: req.body },
+      { $set: updateData },
       { new: true, runValidators: true }
     );
 
     if (!event) {
       return res.status(404).json({
-        error: 'Event not found',
-        details: 'Event not found or access denied'
+        error: "Event not found",
+        details: "Event not found or access denied",
       });
     }
 
     res.json({
-      message: 'Event updated successfully',
-      event
+      message: "Event updated successfully",
+      event,
     });
-
   } catch (error) {
-    console.error('Update event error:', error);
-    if (error.name === 'CastError') {
+    console.error("Update event error:", error);
+    if (error.name === "CastError") {
       return res.status(400).json({
-        error: 'Invalid event ID',
-        details: 'Please provide a valid event ID'
+        error: "Invalid event ID",
+        details: "Please provide a valid event ID",
       });
     }
     res.status(500).json({
-      error: 'Server error',
-      details: 'Failed to update event'
+      error: "Server error",
+      details: "Failed to update event",
     });
   }
 });
 
-// @route   DELETE /api/events/:id
-// @desc    Delete event
-// @access  Private
-router.delete('/:id', async (req, res) => {
+/**
+ * @swagger
+ * /api/events/{id}:
+ *   delete:
+ *     summary: Delete an event
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Event deleted successfully
+ *       400:
+ *         description: Invalid ID
+ *       404:
+ *         description: Event not found
+ *       500:
+ *         description: Server error
+ */
+router.delete("/:id", async (req, res) => {
   try {
     const event = await Event.findOneAndDelete({
       _id: req.params.id,
-      userId: req.user._id
+      userId: req.user._id,
     });
 
     if (!event) {
       return res.status(404).json({
-        error: 'Event not found',
-        details: 'Event not found or access denied'
+        error: "Event not found",
+        details: "Event not found or access denied",
       });
     }
 
     res.json({
-      message: 'Event deleted successfully',
-      event
+      message: "Event deleted successfully",
+      event,
     });
-
   } catch (error) {
-    console.error('Delete event error:', error);
-    if (error.name === 'CastError') {
+    console.error("Delete event error:", error);
+    if (error.name === "CastError") {
       return res.status(400).json({
-        error: 'Invalid event ID',
-        details: 'Please provide a valid event ID'
+        error: "Invalid event ID",
+        details: "Please provide a valid event ID",
       });
     }
     res.status(500).json({
-      error: 'Server error',
-      details: 'Failed to delete event'
+      error: "Server error",
+      details: "Failed to delete event",
     });
   }
 });
 
-// @route   GET /api/events/calendar/:year/:month
-// @desc    Get events for specific month
-// @access  Private
-router.get('/calendar/:year/:month', async (req, res) => {
-  try {
-    const { year, month } = req.params;
-    
-    // Validate year and month
-    const yearNum = parseInt(year);
-    const monthNum = parseInt(month);
-    
-    if (yearNum < 1900 || yearNum > 2100 || monthNum < 1 || monthNum > 12) {
-      return res.status(400).json({
-        error: 'Invalid date',
-        details: 'Please provide valid year and month'
-      });
-    }
+/**
+ * @swagger
+ * /api/events/{id}/attendees:
+ *   put:
+ *     summary: Add an attendee to an event
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               name:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Attendee added successfully
+ *       400:
+ *         description: Validation error
+ *       404:
+ *         description: Event not found
+ *       500:
+ *         description: Server error
+ */
+router.put(
+  "/:id/attendees",
+  [
+    body("email")
+      .isEmail()
+      .normalizeEmail()
+      .withMessage("Valid email is required"),
+    body("name").trim().notEmpty().withMessage("Name is required"),
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const { email, name } = req.body;
 
-    // Calculate start and end of month
-    const startDate = new Date(yearNum, monthNum - 1, 1);
-    const endDate = new Date(yearNum, monthNum, 0, 23, 59, 59);
-
-    const events = await Event.find({
-      userId: req.user._id,
-      status: 'scheduled',
-      $or: [
-        // Events that start in this month
-        {
-          startDate: {
-            $gte: startDate,
-            $lte: endDate
-          }
-        },
-        // Events that span across this month
-        {
-          startDate: { $lt: startDate },
-          endDate: { $gte: startDate }
-        }
-      ]
-    }).sort({ startDate: 1 });
-
-    res.json({ 
-      events,
-      month: monthNum,
-      year: yearNum,
-      totalEvents: events.length
-    });
-
-  } catch (error) {
-    console.error('Get calendar events error:', error);
-    res.status(500).json({
-      error: 'Server error',
-      details: 'Failed to fetch calendar events'
-    });
-  }
-});
-
-// @route   GET /api/events/upcoming
-// @desc    Get upcoming events (next 7 days)
-// @access  Private
-router.get('/upcoming', async (req, res) => {
-  try {
-    const now = new Date();
-    const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
-    const events = await Event.find({
-      userId: req.user._id,
-      status: 'scheduled',
-      startDate: {
-        $gte: now,
-        $lte: nextWeek
-      }
-    }).sort({ startDate: 1 }).limit(10);
-
-    res.json({ 
-      events,
-      count: events.length
-    });
-
-  } catch (error) {
-    console.error('Get upcoming events error:', error);
-    res.status(500).json({
-      error: 'Server error',
-      details: 'Failed to fetch upcoming events'
-    });
-  }
-});
-
-// @route   PUT /api/events/:id/attendees
-// @desc    Add attendee to event
-// @access  Private
-router.put('/:id/attendees', [
-  body('email')
-    .isEmail()
-    .normalizeEmail()
-    .withMessage('Valid email is required'),
-  body('name')
-    .trim()
-    .notEmpty()
-    .withMessage('Name is required')
-], handleValidationErrors, async (req, res) => {
-  try {
-    const { email, name } = req.body;
-
-    const event = await Event.findOneAndUpdate(
-      { 
-        _id: req.params.id, 
+      const event = await Event.findOne({
+        _id: req.params.id,
         userId: req.user._id,
-        'attendees.email': { $ne: email } // Don't add if already exists
-      },
-      { 
-        $push: { 
-          attendees: { 
-            email,
-            name,
-            status: 'pending'
-          }
-        }
-      },
-      { new: true }
-    );
+      });
 
-    if (!event) {
-      return res.status(404).json({
-        error: 'Event not found or attendee already exists',
-        details: 'Event not found, access denied, or attendee already added'
+      if (!event) {
+        return res.status(404).json({
+          error: "Event not found",
+          details: "Event not found or access denied",
+        });
+      }
+
+      // Use the model method to add attendee
+      event.addAttendee(email, name);
+      await event.save();
+
+      res.json({
+        message: "Attendee added successfully",
+        event,
+      });
+    } catch (error) {
+      console.error("Add attendee error:", error);
+      res.status(500).json({
+        error: "Server error",
+        details: "Failed to add attendee",
       });
     }
-
-    res.json({
-      message: 'Attendee added successfully',
-      event
-    });
-
-  } catch (error) {
-    console.error('Add attendee error:', error);
-    res.status(500).json({
-      error: 'Server error',
-      details: 'Failed to add attendee'
-    });
   }
-});
+);
+
+// @route   PUT /api/events/:id/attendees/:email/status
+// @desc    Update attendee status
+// @access  Private
+/**
+ * @swagger
+ * /api/events/{id}/attendees/{email}/status:
+ *   put:
+ *     summary: Update attendee status for an event
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: email
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [pending, accepted, declined]
+ *     responses:
+ *       200:
+ *         description: Attendee status updated successfully
+ *       400:
+ *         description: Validation error or invalid parameters
+ *       404:
+ *         description: Event not found
+ *       500:
+ *         description: Server error
+ */
+router.put(
+  "/:id/attendees/:email/status",
+  [
+    body("status")
+      .isIn(["pending", "accepted", "declined"])
+      .withMessage("Status must be pending, accepted, or declined"),
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const { status } = req.body;
+      const email = decodeURIComponent(req.params.email);
+
+      const event = await Event.findOne({
+        _id: req.params.id,
+        userId: req.user._id,
+      });
+
+      if (!event) {
+        return res.status(404).json({
+          error: "Event not found",
+          details: "Event not found or access denied",
+        });
+      }
+
+      // Use the model method to update attendee status
+      event.updateAttendeeStatus(email, status);
+      await event.save();
+
+      res.json({
+        message: "Attendee status updated successfully",
+        event,
+      });
+    } catch (error) {
+      console.error("Update attendee status error:", error);
+      res.status(500).json({
+        error: "Server error",
+        details: "Failed to update attendee status",
+      });
+    }
+  }
+);
 
 module.exports = router;

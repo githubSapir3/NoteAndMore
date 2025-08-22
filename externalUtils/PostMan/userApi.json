@@ -1,0 +1,460 @@
+{
+  "info": {
+    "name": "Task Management - Users API",
+    "description": "Complete Postman collection for Users API endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "profile"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/users/profile",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "profile"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "body": "{\n  \"user\": {\n    \"id\": \"68a599123456789012345678\",\n    \"email\": \"user@example.com\",\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"username\": \"johndoe\",\n    \"avatar\": null,\n    \"preferences\": {\n      \"theme\": \"light\",\n      \"language\": \"en\",\n      \"timezone\": \"Asia/Jerusalem\",\n      \"notifications\": {\n        \"email\": true,\n        \"push\": true,\n        \"reminders\": true\n      }\n    },\n    \"role\": \"user\",\n    \"lastLogin\": \"2024-08-21T10:30:00.000Z\",\n    \"emailVerified\": false,\n    \"createdAt\": \"2024-08-20T08:00:00.000Z\",\n    \"updatedAt\": \"2024-08-21T10:30:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Smith\",\n  \"username\": \"janesmith\",\n  \"avatar\": \"https://example.com/avatar.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "profile"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Smith\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users/profile",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "profile"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "body": "{\n  \"message\": \"Profile updated successfully\",\n  \"user\": {\n    \"id\": \"68a599123456789012345678\",\n    \"email\": \"user@example.com\",\n    \"firstName\": \"Jane\",\n    \"lastName\": \"Smith\",\n    \"username\": \"janesmith\",\n    \"avatar\": \"https://example.com/avatar.jpg\",\n    \"preferences\": {\n      \"theme\": \"light\",\n      \"language\": \"en\",\n      \"timezone\": \"Asia/Jerusalem\",\n      \"notifications\": {\n        \"email\": true,\n        \"push\": true,\n        \"reminders\": true\n      }\n    },\n    \"role\": \"user\",\n    \"updatedAt\": \"2024-08-21T11:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update User Preferences",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"theme\": \"dark\",\n  \"language\": \"he\",\n  \"timezone\": \"America/New_York\",\n  \"notifications\": {\n    \"email\": false,\n    \"push\": true,\n    \"reminders\": true\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/preferences",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "preferences"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"theme\": \"dark\",\n  \"language\": \"he\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users/preferences",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "preferences"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "body": "{\n  \"message\": \"Preferences updated successfully\",\n  \"preferences\": {\n    \"theme\": \"dark\",\n    \"language\": \"he\",\n    \"timezone\": \"America/New_York\",\n    \"notifications\": {\n      \"email\": false,\n      \"push\": true,\n      \"reminders\": true\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"oldpassword123\",\n  \"newPassword\": \"newpassword456\",\n  \"confirmPassword\": \"newpassword456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "change-password"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"currentPassword\": \"oldpassword\",\n  \"newPassword\": \"newpassword\",\n  \"confirmPassword\": \"newpassword\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users/change-password",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "change-password"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "body": "{\n  \"message\": \"Password changed successfully\"\n}"
+            },
+            {
+              "name": "Invalid Current Password",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"currentPassword\": \"wrongpassword\",\n  \"newPassword\": \"newpassword\",\n  \"confirmPassword\": \"newpassword\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users/change-password",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "change-password"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "body": "{\n  \"error\": \"Invalid password\",\n  \"details\": \"Current password is incorrect\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Deactivate Account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"userpassword123\",\n  \"confirmDeactivation\": \"DEACTIVATE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/account",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "account"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"password\": \"userpassword\",\n  \"confirmDeactivation\": \"DEACTIVATE\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users/account",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "account"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "body": "{\n  \"message\": \"Account deactivated successfully\",\n  \"details\": \"Your account has been deactivated and you will be logged out\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reactivate Account",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"userpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/reactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "reactivate"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"userpassword\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users/reactivate",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "reactivate"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "body": "{\n  \"message\": \"Account reactivated successfully\",\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"user\": {\n    \"id\": \"68a599123456789012345678\",\n    \"email\": \"user@example.com\",\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"username\": \"johndoe\",\n    \"preferences\": {\n      \"theme\": \"light\",\n      \"language\": \"en\",\n      \"timezone\": \"Asia/Jerusalem\",\n      \"notifications\": {\n        \"email\": true,\n        \"push\": true,\n        \"reminders\": true\n      }\n    },\n    \"role\": \"user\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get User Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "stats"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/users/stats",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", "stats"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "body": "{\n  \"stats\": {\n    \"accountAge\": 45,\n    \"lastLogin\": \"2024-08-21T10:30:00.000Z\",\n    \"emailVerified\": false,\n    \"totalLogins\": 0,\n    \"totalTasks\": 0,\n    \"completedTasks\": 0,\n    \"totalContacts\": 0,\n    \"totalEvents\": 0,\n    \"totalShoppingLists\": 0\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Test Scripts",
+      "item": [
+        {
+          "name": "Complete User Workflow Test",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "profile"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test: Get User Profile",
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has user object', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson).to.have.property('user');",
+                  "    pm.expect(responseJson.user).to.have.property('id');",
+                  "    pm.expect(responseJson.user).to.have.property('email');",
+                  "    pm.expect(responseJson.user).to.have.property('firstName');",
+                  "    pm.expect(responseJson.user).to.have.property('lastName');",
+                  "});",
+                  "",
+                  "pm.test('User has preferences', function () {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.expect(responseJson.user).to.have.property('preferences');",
+                  "    pm.expect(responseJson.user.preferences).to.have.property('theme');",
+                  "    pm.expect(responseJson.user.preferences).to.have.property('language');",
+                  "    pm.expect(responseJson.user.preferences).to.have.property('notifications');",
+                  "});",
+                  "",
+                  "// Save user ID for other tests",
+                  "if (pm.response.code === 200) {",
+                  "    const responseJson = pm.response.json();",
+                  "    pm.collectionVariables.set('userId', responseJson.user.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global pre-request script",
+          "// Add any global setup here"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test script",
+          "// Check for common error patterns",
+          "if (pm.response.code >= 400) {",
+          "    console.log('Error Response:', pm.response.json());",
+          "}"
+        ]
+      }
+    }
+  ]
+}

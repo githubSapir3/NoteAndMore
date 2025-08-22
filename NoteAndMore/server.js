@@ -13,7 +13,7 @@ const eventRoutes = require("./routes/events");
 const contactRoutes = require("./routes/contacts");
 const shoppingRoutes = require("./routes/shopping");
 const categoryRoutes = require("./routes/categories");
-const userRoutes = require("./routes/users"); // Import user routes
+const userRoutes = require("./routes/users"); 
 
 // Import Swagger configuration
 const { swaggerUi, specs } = require("./config/swagger");
@@ -89,8 +89,7 @@ app.use("/api/tasks", authMiddleware, taskRoutes);
 app.use("/api/events", authMiddleware, eventRoutes);
 app.use("/api/contacts", authMiddleware, contactRoutes);
 app.use("/api/shopping", authMiddleware, shoppingRoutes);
-// app.use("/api/quotes", authMiddleware, quoteRoutes); //TODO: Implement quote routes
-app.use("/api/categories", authMiddleware, categoryRoutes); // TODO: Implement category routes
+app.use("/api/categories", authMiddleware, categoryRoutes);
 app.use("/api/users", authMiddleware, userRoutes);
 
 // Swagger documentation
@@ -155,6 +154,7 @@ app.listen(PORT, () => {
   console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
   console.log(`📱 API URL: http://localhost:${PORT}/api`);
   console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
+  console.log(`📚 http://localhost:${PORT}/api-docs/#/`);
 });
 
 // Graceful shutdown

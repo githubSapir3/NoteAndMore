@@ -786,4 +786,5 @@ router.post('/logout', authMiddleware, (req, res) => {
   });
 });
 
+
 module.exports = router;

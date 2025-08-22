@@ -33,15 +33,18 @@ All protected routes require JWT token in header:
 - DELETE /events/:id - Delete event
 
 ### Contacts
-- GET /contacts - Get contacts
-- POST /contacts - Create contact
-- PUT /contacts/:id - Update contact
-- DELETE /contacts/:id - Delete contact
 
 ### Shopping
-- GET /shopping - Get shopping lists
-- POST /shopping - Create list
-- POST /shopping/:id/items - Add item
+GET /api/shopping (list + pagination)
+GET /api/shopping/{id}
+POST /api/shopping
+PUT /api/shopping/{id}
+DELETE /api/shopping/{id}
+POST /api/shopping/{id}/items
+PUT /api/shopping/{id}/items/{itemId}
+DELETE /api/shopping/{id}/items/{itemId}
+PUT /api/shopping/{id}/complete
+GET /api/shopping/stats/summary
 
 ### Categories
 - GET /categories - Get categories
@@ -70,19 +73,9 @@ All protected routes require a JWT token in the `Authorization` header.
 - Most endpoints return paginated results and detailed error messages.
 - See below for example endpoints:
 
-### Example Endpoints
-
-- `POST /api/auth/register` – Register new user
-- `POST /api/auth/login` – Login and get JWT token
-- `GET /api/users/profile` – Get current user profile
-- `GET /api/tasks` – Get tasks (filter, sort, paginate)
-- `POST /api/events` – Create event
-- `PUT /api/contacts/:id` – Update contact
-- `POST /api/shopping/:id/items` – Add item to shopping list
-- `GET /api/categories` – Get categories
 
 For full details, see the endpoint list below or review the backend route files.
 
 ---
 **Tip:**  
-Always send the JWT token in the `Authorization: Bearer <token>` header for protected
+Always send the JWT token in the .env file

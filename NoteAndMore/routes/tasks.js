@@ -17,6 +17,275 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
+/**
+ * @swagger
+ * /api/tasks:
+ *   get:
+ *     summary: Get all tasks for user
+ *     description: Fetch all tasks with filters, pagination, and sorting.
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Page number (default 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Results per page (default 20, max 100)
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [pending, in-progress, completed, cancelled]
+ *       - in: query
+ *         name: priority
+ *         schema:
+ *           type: string
+ *           enum: [low, medium, high]
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [createdAt, dueDate, title, priority]
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *     responses:
+ *       200:
+ *         description: List of tasks with pagination
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Server error
+ */
+
+/**
+ * @swagger
+ * /api/tasks/{id}:
+ *   get:
+ *     summary: Get a single task
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Task ID
+ *     responses:
+ *       200:
+ *         description: Task found
+ *       404:
+ *         description: Task not found
+ *       500:
+ *         description: Server error
+ */
+
+/**
+ * @swagger
+ * /api/tasks:
+ *   post:
+ *     summary: Create a new task
+ *     tags: [Tasks]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               priority:
+ *                 type: string
+ *                 enum: [low, medium, high]
+ *               status:
+ *                 type: string
+ *                 enum: [pending, in-progress, completed, cancelled]
+ *               category:
+ *                 type: string
+ *               dueDate:
+ *                 type: string
+ *                 format: date
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               stickers:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       201:
+ *         description: Task created successfully
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Server error
+ */
+
+/**
+ * @swagger
+ * /api/tasks/{id}:
+ *   put:
+ *     summary: Update a task
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Task ID
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             description: Fields to update
+ *     responses:
+ *       200:
+ *         description: Task updated successfully
+ *       404:
+ *         description: Task not found
+ *       500:
+ *         description: Server error
+ */
+
+/**
+ * @swagger
+ * /api/tasks/{id}:
+ *   delete:
+ *     summary: Delete a task
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Task deleted successfully
+ *       404:
+ *         description: Task not found
+ *       500:
+ *         description: Server error
+ */
+
+/**
+ * @swagger
+ * /api/tasks/{id}/complete:
+ *   put:
+ *     summary: Mark task as completed
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Task marked as completed
+ *       404:
+ *         description: Task not found
+ *       500:
+ *         description: Server error
+ */
+
+/**
+ * @swagger
+ * /api/tasks/{id}/subtasks:
+ *   put:
+ *     summary: Add a subtask
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Subtask added successfully
+ *       404:
+ *         description: Task not found
+ *       500:
+ *         description: Server error
+ */
+
+/**
+ * @swagger
+ * /api/tasks/{id}/subtasks/{subtaskId}:
+ *   put:
+ *     summary: Update a subtask
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: subtaskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               completed:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Subtask updated successfully
+ *       404:
+ *         description: Task or subtask not found
+ *       500:
+ *         description: Server error
+ */
+
+/**
+ * @swagger
+ * /api/tasks/stats/summary:
+ *   get:
+ *     summary: Get task statistics
+ *     tags: [Tasks]
+ *     responses:
+ *       200:
+ *         description: Task statistics summary
+ *       500:
+ *         description: Server error
+ */
+
 // Validation rules
 const validateTask = [
   body("title")

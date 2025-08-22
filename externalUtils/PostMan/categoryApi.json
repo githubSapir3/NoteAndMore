@@ -1,0 +1,320 @@
+{
+  "info": {
+    "name": "Categories API Tests",
+    "description": "בדיקות מקיפות לכל המטודות ב-Categories API (כולל Success + Error Cases)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api/categories",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categoryId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Get Categories",
+      "item": [
+        {
+          "name": "Get All Categories - Success",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}", "host": ["{{baseUrl}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": [
+                "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                "pm.test('Response has categories array', function () {",
+                "  const jsonData = pm.response.json();",
+                "  pm.expect(jsonData).to.have.property('categories');",
+                "  pm.expect(jsonData.categories).to.be.an('array');",
+                "});"
+              ]}
+            }
+          ]
+        },
+        {
+          "name": "Get Categories - Invalid Type Filter",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}?type=invalid", "host": ["{{baseUrl}}"], "query": [{ "key": "type", "value": "invalid" }] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": [
+                "pm.test('Status code is 400', function () { pm.response.to.have.status(400); });"
+              ]}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Create Category",
+      "item": [
+        {
+          "name": "Create Category - Success",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Work\",\n  \"type\": \"task\",\n  \"color\": \"#FF5733\",\n  \"icon\": \"work\",\n  \"description\": \"Work related tasks\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}", "host": ["{{baseUrl}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": [
+                "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                "const jsonData = pm.response.json();",
+                "pm.collectionVariables.set('categoryId', jsonData.category._id);"
+              ]}
+            }
+          ]
+        },
+        {
+          "name": "Create Category - Duplicate",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Work\",\n  \"type\": \"task\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}", "host": ["{{baseUrl}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": [
+                "pm.test('Status code is 400', function () { pm.response.to.have.status(400); });",
+                "pm.test('Error is Category already exists', function () {",
+                "  const jsonData = pm.response.json();",
+                "  pm.expect(jsonData.error).to.eql('Category already exists');",
+                "});"
+              ]}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Get Single Category",
+      "item": [
+        {
+          "name": "Get Category by ID - Success",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["{{categoryId}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": [
+                "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });"
+              ]}
+            }
+          ]
+        },
+        {
+          "name": "Get Category - Invalid ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/123", "host": ["{{baseUrl}}"], "path": ["123"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": [
+                "pm.test('Status code is 400', function () { pm.response.to.have.status(400); });"
+              ]}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Update Category",
+      "item": [
+        {
+          "name": "Update Category - Success",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Updated Work\",\n  \"type\": \"task\",\n  \"color\": \"#00FF00\"\n}" },
+            "url": { "raw": "{{baseUrl}}/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["{{categoryId}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": [
+                "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });"
+              ]}
+            }
+          ]
+        },
+        {
+          "name": "Update Category - Not Found",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"NoCat\",\n  \"type\": \"task\"\n}" },
+            "url": { "raw": "{{baseUrl}}/64b21f123456789012345678", "host": ["{{baseUrl}}"], "path": ["64b21f123456789012345678"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": [
+                "pm.test('Status code is 404', function () { pm.response.to.have.status(404); });"
+              ]}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Delete Category",
+      "item": [
+        {
+          "name": "Delete Category - Success",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["{{categoryId}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": [
+                "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });"
+              ]}
+            }
+          ]
+        },
+        {
+          "name": "Delete Category - Not Found",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/64b21f123456789012345678", "host": ["{{baseUrl}}"], "path": ["64b21f123456789012345678"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": [
+                "pm.test('Status code is 404', function () { pm.response.to.have.status(404); });"
+              ]}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Reorder Categories",
+      "item": [
+        {
+          "name": "Reorder Categories - Success",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categories\": [\n    { \"id\": \"{{categoryId}}\", \"sortOrder\": 1 }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/reorder", "host": ["{{baseUrl}}"], "path": ["reorder"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": [
+                "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });"
+              ]}
+            }
+          ]
+        },
+        {
+          "name": "Reorder Categories - Invalid Data",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"categories\": \"notArray\"\n}" },
+            "url": { "raw": "{{baseUrl}}/reorder", "host": ["{{baseUrl}}"], "path": ["reorder"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": [
+                "pm.test('Status code is 400', function () { pm.response.to.have.status(400); });"
+              ]}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. Get Category Stats",
+      "item": [
+        {
+          "name": "Get Stats - Success",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/stats", "host": ["{{baseUrl}}"], "path": ["stats"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": [
+                "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                "pm.test('Response has stats array', function () {",
+                "  const jsonData = pm.response.json();",
+                "  pm.expect(jsonData).to.have.property('stats');",
+                "  pm.expect(jsonData.stats).to.be.an('array');",
+                "});"
+              ]}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
