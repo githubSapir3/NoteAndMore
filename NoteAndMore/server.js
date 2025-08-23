@@ -154,7 +154,7 @@ app.listen(PORT, () => {
   console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
   console.log(`📱 API URL: http://localhost:${PORT}/api`);
   console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
-  console.log(`📚 http://localhost:${PORT}/api-docs/#/`);
+  console.log(`📚 SWAGGER: http://localhost:${PORT}/api-docs/#/`);
 });
 
 // Graceful shutdown
