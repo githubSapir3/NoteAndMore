@@ -61,9 +61,19 @@ mongoose
   .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 10000, // fail faster on DNS/selection issues
   })
   .then(() => {
     console.log("✅ Connected to MongoDB successfully");
+
+    // ===== START SERVER =====
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
+      console.log(`📱 API URL: http://localhost:${PORT}/api`);
+      console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
+      console.log(`📚 SWAGGER: http://localhost:${PORT}/api-docs/#/`);
+    });
   })
   .catch((error) => {
     console.error("❌ MongoDB connection error:", error);
@@ -147,15 +157,6 @@ app.use((error, req, res, next) => {
     error: error.message || "Internal Server Error",
     ...(process.env.NODE_ENV === "development" && { stack: error.stack }),
   });
-});
-
-// ===== START SERVER =====
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
-  console.log(`📱 API URL: http://localhost:${PORT}/api`);
-  console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
-  console.log(`📚 SWAGGER: http://localhost:${PORT}/api-docs/#/`);
 });
 
 // Graceful shutdown

@@ -283,6 +283,93 @@ router.get(
   }
 );
 
+// @route   PUT /api/categories/reorder
+// @desc    Reorder categories
+// @access  Private
+router.put(  "/reorder",
+  [
+    body("categories").isArray().withMessage("Categories must be an array"),
+    body("categories.*.id").isMongoId().withMessage("Invalid category ID"),
+    body("categories.*.sortOrder")
+      .isInt({ min: 0 })
+      .withMessage("Sort order must be a non-negative integer"),
+  ],
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const { categories } = req.body;
+      const userId = req.user._id || req.user.userId;
+
+      // Update sort order for each category
+      const updatePromises = categories.map(({ id, sortOrder }) =>
+        Category.findOneAndUpdate(
+          {
+            _id: id,
+            userId,
+            isDefault: false,
+          },
+          { sortOrder },
+          { new: true }
+        )
+      );
+
+      const updatedCategories = await Promise.all(updatePromises);
+
+      // Filter out null results (categories that couldn't be updated)
+      const validUpdates = updatedCategories.filter((cat) => cat !== null);
+
+      res.json({
+        message: "Categories reordered successfully",
+        categories: validUpdates,
+      });
+    } catch (error) {
+      console.error("Reorder categories error:", error);
+      res.status(500).json({
+        error: "Server error",
+        details: "Failed to reorder categories",
+      });
+    }
+  }
+);
+
+// @route   GET /api/categories/stats
+// @desc    Get category usage statistics
+// @access  Private
+router.get("/stats", async (req, res) => {
+  try {
+    const userId = req.user._id || req.user.userId;
+
+    const stats = await Category.aggregate([
+      {
+        $match: {
+          $or: [{ userId }, { isDefault: true, userId: null }],
+        },
+      },
+      {
+        $group: {
+          _id: "$type",
+          total: { $sum: 1 },
+          userCreated: {
+            $sum: { $cond: [{ $eq: ["$userId", userId] }, 1, 0] },
+          },
+          defaults: {
+            $sum: { $cond: [{ $eq: ["$isDefault", true] }, 1, 0] },
+          },
+        },
+      },
+    ]);
+
+    res.json({ stats });
+  } catch (error) {
+    console.error("Get category stats error:", error);
+    res.status(500).json({
+      error: "Server error",
+      details: "Failed to fetch category statistics",
+    });
+  }
+});
+
+
 // @route   GET /api/categories/:id
 // @desc    Get single category
 // @access  Private
@@ -363,8 +450,7 @@ router.post("/", validateCategory, handleValidationErrors, async (req, res) => {
 // @route   PUT /api/categories/:id
 // @desc    Update category
 // @access  Private
-router.put(
-  "/:id",
+router.put(  "/:id",
   validateCategory,
   handleValidationErrors,
   async (req, res) => {
@@ -447,91 +533,5 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-// @route   PUT /api/categories/reorder
-// @desc    Reorder categories
-// @access  Private
-router.put(
-  "/reorder",
-  [
-    body("categories").isArray().withMessage("Categories must be an array"),
-    body("categories.*.id").isMongoId().withMessage("Invalid category ID"),
-    body("categories.*.sortOrder")
-      .isInt({ min: 0 })
-      .withMessage("Sort order must be a non-negative integer"),
-  ],
-  handleValidationErrors,
-  async (req, res) => {
-    try {
-      const { categories } = req.body;
-      const userId = req.user._id || req.user.userId;
-
-      // Update sort order for each category
-      const updatePromises = categories.map(({ id, sortOrder }) =>
-        Category.findOneAndUpdate(
-          {
-            _id: id,
-            userId,
-            isDefault: false,
-          },
-          { sortOrder },
-          { new: true }
-        )
-      );
-
-      const updatedCategories = await Promise.all(updatePromises);
-
-      // Filter out null results (categories that couldn't be updated)
-      const validUpdates = updatedCategories.filter((cat) => cat !== null);
-
-      res.json({
-        message: "Categories reordered successfully",
-        categories: validUpdates,
-      });
-    } catch (error) {
-      console.error("Reorder categories error:", error);
-      res.status(500).json({
-        error: "Server error",
-        details: "Failed to reorder categories",
-      });
-    }
-  }
-);
-
-// @route   GET /api/categories/stats
-// @desc    Get category usage statistics
-// @access  Private
-router.get("/stats", async (req, res) => {
-  try {
-    const userId = req.user._id || req.user.userId;
-
-    const stats = await Category.aggregate([
-      {
-        $match: {
-          $or: [{ userId }, { isDefault: true, userId: null }],
-        },
-      },
-      {
-        $group: {
-          _id: "$type",
-          total: { $sum: 1 },
-          userCreated: {
-            $sum: { $cond: [{ $eq: ["$userId", userId] }, 1, 0] },
-          },
-          defaults: {
-            $sum: { $cond: [{ $eq: ["$isDefault", true] }, 1, 0] },
-          },
-        },
-      },
-    ]);
-
-    res.json({ stats });
-  } catch (error) {
-    console.error("Get category stats error:", error);
-    res.status(500).json({
-      error: "Server error",
-      details: "Failed to fetch category statistics",
-    });
-  }
-});
 
 module.exports = router;
