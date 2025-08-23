@@ -13,10 +13,11 @@ const eventRoutes = require("./routes/events");
 const contactRoutes = require("./routes/contacts");
 const shoppingRoutes = require("./routes/shopping");
 const categoryRoutes = require("./routes/categories");
-const userRoutes = require("./routes/users"); 
+const userRoutes = require("./routes/users");
 
 // Import Swagger configuration
-const { swaggerUi, specs } = require("./config/swagger");
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./utils/swagger");
 
 // Import middleware
 const { authMiddleware } = require("./middleware/auth");
@@ -93,7 +94,7 @@ app.use("/api/categories", authMiddleware, categoryRoutes);
 app.use("/api/users", authMiddleware, userRoutes);
 
 // Swagger documentation
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Add info route
 app.get("/api", (req, res) => {

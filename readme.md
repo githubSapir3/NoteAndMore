@@ -54,34 +54,6 @@ A comprehensive task management system backend built with Node.js, Express, and 
 
 ## Project Structure
 
-<!-- ├── Database/ -->
-<!-- │   └── playground-1.mongodb.js     # MongoDB setup and sample data scripts -->
-```
-NoteAndMore/
-├── externalUtils/
-│   └── PostMan/                    # Postman collection for API testing
-└── backend/
-    ├── middleware/
-    │   └── auth.js                 # JWT authentication middleware
-    ├── models/
-    │   ├── User.js                 
-    │   └── Task.js               
-    <!-- |   └── Event.js
-    |   └── Contact.js -->
-    model with subtasks support
-    ├── routes/
-    │   ├── auth.js                 # Authentication routes (register, login, profile)
-    │   ├── users.js                # User management routes (profile, preferences)
-    │   ├── tasks.js                # Task CRUD operations and filtering
-    │   ├── events.js               # Event management and calendar features
-    │   ├── contacts.js             # Contact management with call tracking
-    │   └── shopping.js             # Shopping list management
-    ├── .env                        # Environment variables 
-    ├── .gitignore                  # Git ignore file
-    ├── package.json                # Dependencies and scripts
-    ├── package-lock.json           # Locked dependency versions
-    └── server.js                   # Main application entry point
-```
 
 ## Directory Explanations
 
