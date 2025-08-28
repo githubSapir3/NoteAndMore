@@ -15,58 +15,66 @@ const shoppingRoutes = require("./routes/shopping");
 const categoryRoutes = require("./routes/categories");
 const userRoutes = require("./routes/users");
 
-// Import Swagger configuration
+// Swagger
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./utils/swagger");
 
-// Import middleware
+// Middleware
 const { authMiddleware } = require("./middleware/auth");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ===== MIDDLEWARE =====
+/* =======================
+   MIDDLEWARE (order matters)
+   ======================= */
+
+// CORS – simplest dev setup: echo request origin + send credentials
+app.use(
+  cors({
+    origin: true,          // reflect request origin (e.g., http://localhost:5173)
+    credentials: true,     // allow cookies/auth headers
+  })
+);
 
 // Security middleware
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false,
+    crossOriginEmbedderPolicy: false,
+  })
+);
 
-// Rate limiting
+// Rate limiting (for /api only)
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: "Too many requests from this IP, please try again later.",
 });
 app.use("/api", limiter);
 
-// CORS configuration
-app.use(
-  cors({
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
-    credentials: true,
-  })
-);
-
-// Body parsing middleware
+// Body parsers
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Logging middleware
+// Simple logger
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
 });
 
-// ===== DATABASE CONNECTION =====
+/* =======================
+   DATABASE
+   ======================= */
 mongoose
   .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 10000, // fail faster on DNS/selection issues
+    serverSelectionTimeoutMS: 10000,
   })
   .then(() => {
     console.log("✅ Connected to MongoDB successfully");
 
-    // ===== START SERVER =====
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
@@ -80,7 +88,9 @@ mongoose
     process.exit(1);
   });
 
-// ===== ROUTES =====
+/* =======================
+   ROUTES
+   ======================= */
 
 // Health check
 app.get("/api/health", (req, res) => {
@@ -92,10 +102,10 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Authentication routes (public)
+// Public auth routes
 app.use("/api/auth", authRoutes);
 
-// Protected routes (require authentication)
+// Protected routes
 app.use("/api/tasks", authMiddleware, taskRoutes);
 app.use("/api/events", authMiddleware, eventRoutes);
 app.use("/api/contacts", authMiddleware, contactRoutes);
@@ -103,19 +113,19 @@ app.use("/api/shopping", authMiddleware, shoppingRoutes);
 app.use("/api/categories", authMiddleware, categoryRoutes);
 app.use("/api/users", authMiddleware, userRoutes);
 
-// Swagger documentation
+// Swagger docs
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Add info route
+// API root
 app.get("/api", (req, res) => {
   res.json({
     message: "Task Management API",
-    documentation: "http://localhost:5000/api-docs",
+    documentation: `http://localhost:${PORT}/api-docs`,
     version: "1.0.0",
   });
 });
 
-// 404 handler
+// 404
 app.use("*", (req, res) => {
   res.status(404).json({
     error: "Route not found",
@@ -127,16 +137,11 @@ app.use("*", (req, res) => {
 app.use((error, req, res, next) => {
   console.error("Error:", error);
 
-  // Mongoose validation error
   if (error.name === "ValidationError") {
     const errors = Object.values(error.errors).map((e) => e.message);
-    return res.status(400).json({
-      error: "Validation Error",
-      details: errors,
-    });
+    return res.status(400).json({ error: "Validation Error", details: errors });
   }
 
-  // Mongoose duplicate key error
   if (error.code === 11000) {
     return res.status(400).json({
       error: "Duplicate field value",
@@ -144,15 +149,10 @@ app.use((error, req, res, next) => {
     });
   }
 
-  // JWT errors
   if (error.name === "JsonWebTokenError") {
-    return res.status(401).json({
-      error: "Invalid token",
-      details: "Please log in again",
-    });
+    return res.status(401).json({ error: "Invalid token", details: "Please log in again" });
   }
 
-  // Default error
   res.status(error.status || 500).json({
     error: error.message || "Internal Server Error",
     ...(process.env.NODE_ENV === "development" && { stack: error.stack }),
