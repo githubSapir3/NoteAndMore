@@ -1,0 +1,1007 @@
+
+{
+  "info": {
+    "name": "Shopping API Tests",
+    "description": "Comprehensive test collection for Shopping API endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "shoppingListId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "itemId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login to get token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('authToken', response.token);",
+                  "    console.log('Token saved:', response.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get All Shopping Lists",
+      "item": [
+        {
+          "name": "Get all shopping lists - default",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shopping",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get all shopping lists - with status filter",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shopping?status=active",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "active"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get all shopping lists - with pagination",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shopping?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get all shopping lists - invalid status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shopping?status=invalid",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "invalid"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get all shopping lists - invalid pagination",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shopping?page=0&limit=100",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Get Single Shopping List",
+      "item": [
+        {
+          "name": "Get shopping list by ID - valid",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('shoppingListId', response.list._id);",
+                  "    console.log('Shopping list ID saved:', response.list._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shopping/{{shoppingListId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "{{shoppingListId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get shopping list by ID - invalid ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shopping/invalid-id-123",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "invalid-id-123"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get shopping list by ID - non-existent ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shopping/507f1f77bcf86cd799439011",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "507f1f77bcf86cd799439011"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Create Shopping List",
+      "item": [
+        {
+          "name": "Create shopping list - valid data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('shoppingListId', response.list._id);",
+                  "    console.log('New shopping list ID saved:', response.list._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Weekly Groceries\",\n  \"description\": \"Essential items for the week\",\n  \"dueDate\": \"2024-12-31T23:59:59.000Z\",\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create shopping list - minimal data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Quick Shopping\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create shopping list - missing name",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Shopping list without name\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create shopping list - name too long",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"This is a very long shopping list name that exceeds the maximum allowed length of one hundred characters and should trigger a validation error\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create shopping list - invalid status",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Invalid Status List\",\n  \"status\": \"invalid_status\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create shopping list - invalid date format",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Invalid Date List\",\n  \"dueDate\": \"not-a-date\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Update Shopping List",
+      "item": [
+        {
+          "name": "Update shopping list - valid data",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Weekly Groceries\",\n  \"description\": \"Updated description\",\n  \"status\": \"completed\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping/{{shoppingListId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "{{shoppingListId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update shopping list - partial update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"archived\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping/{{shoppingListId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "{{shoppingListId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update shopping list - non-existent ID",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping/507f1f77bcf86cd799439011",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "507f1f77bcf86cd799439011"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update shopping list - invalid data",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"status\": \"invalid\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping/{{shoppingListId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "{{shoppingListId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Delete Shopping List",
+      "item": [
+        {
+          "name": "Delete shopping list - valid ID",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shopping/{{shoppingListId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "{{shoppingListId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete shopping list - non-existent ID",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shopping/507f1f77bcf86cd799439011",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "507f1f77bcf86cd799439011"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete shopping list - invalid ID format",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shopping/invalid-id",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "invalid-id"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Add Items to Shopping List",
+      "item": [
+        {
+          "name": "Add item - valid data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    const items = response.list.items;",
+                  "    if (items && items.length > 0) {",
+                  "        pm.collectionVariables.set('itemId', items[items.length - 1]._id);",
+                  "        console.log('Item ID saved:', items[items.length - 1]._id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Milk\",\n  \"quantity\": 2,\n  \"price\": 3.99,\n  \"currency\": \"USD\",\n  \"priority\": \"high\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping/{{shoppingListId}}/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "{{shoppingListId}}", "items"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add item - minimal data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bread\",\n  \"quantity\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping/{{shoppingListId}}/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "{{shoppingListId}}", "items"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add item - missing name",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 1,\n  \"price\": 2.99\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping/{{shoppingListId}}/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "{{shoppingListId}}", "items"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add item - invalid quantity",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Invalid Item\",\n  \"quantity\": 0\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping/{{shoppingListId}}/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "{{shoppingListId}}", "items"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add item - invalid currency",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Invalid Currency Item\",\n  \"quantity\": 1,\n  \"currency\": \"INVALID\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping/{{shoppingListId}}/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "{{shoppingListId}}", "items"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add item - invalid priority",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Invalid Priority Item\",\n  \"quantity\": 1,\n  \"priority\": \"invalid_priority\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping/{{shoppingListId}}/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "{{shoppingListId}}", "items"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add item - non-existent shopping list",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Item\",\n  \"quantity\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping/507f1f77bcf86cd799439011/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "507f1f77bcf86cd799439011", "items"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Update Items in Shopping List",
+      "item": [
+        {
+          "name": "Update item - mark as purchased",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"purchased\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping/{{shoppingListId}}/items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "{{shoppingListId}}", "items", "{{itemId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update item - change quantity",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 3\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping/{{shoppingListId}}/items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "{{shoppingListId}}", "items", "{{itemId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update item - change price",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 4.99\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping/{{shoppingListId}}/items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "{{shoppingListId}}", "items", "{{itemId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update item - add notes",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Organic preferred\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping/{{shoppingListId}}/items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "{{shoppingListId}}", "items", "{{itemId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update item - multiple fields",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 2,\n  \"price\": 3.49,\n  \"notes\": \"Updated notes\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping/{{shoppingListId}}/items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "{{shoppingListId}}", "items", "{{itemId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update item - non-existent item",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping/{{shoppingListId}}/items/507f1f77bcf86cd799439011",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "{{shoppingListId}}", "items", "507f1f77bcf86cd799439011"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update item - non-existent shopping list",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shopping/507f1f77bcf86cd799439011/items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "507f1f77bcf86cd799439011", "items", "{{itemId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Remove Items from Shopping List",
+      "item": [
+        {
+          "name": "Remove item - valid item",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shopping/{{shoppingListId}}/items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "{{shoppingListId}}", "items", "{{itemId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove item - non-existent item",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shopping/{{shoppingListId}}/items/507f1f77bcf86cd799439011",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "{{shoppingListId}}", "items", "507f1f77bcf86cd799439011"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove item - non-existent shopping list",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shopping/507f1f77bcf86cd799439011/items/{{itemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "507f1f77bcf86cd799439011", "items", "{{itemId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Complete Shopping List",
+      "item": [
+        {
+          "name": "Complete shopping list - valid ID",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shopping/{{shoppingListId}}/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "{{shoppingListId}}", "complete"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Complete shopping list - non-existent ID",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shopping/507f1f77bcf86cd799439011/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "507f1f77bcf86cd799439011", "complete"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Complete shopping list - invalid ID format",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shopping/invalid-id/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "invalid-id", "complete"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Shopping Statistics",
+      "item": [
+        {
+          "name": "Get shopping statistics summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shopping/stats/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping", "stats", "summary"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Error Handling Tests",
+      "item": [
+        {
+          "name": "Test without authentication",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shopping",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test with invalid token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer invalid-token-123"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/shopping",
+              "host": ["{{baseUrl}}"],
+              "path": ["shopping"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

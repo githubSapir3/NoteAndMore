@@ -447,6 +447,28 @@ p {
   .card {
     padding: var(--spacing-lg);
   }
+
+  /* Layout responsive styles */
+  .main-content {
+    margin-left: 0 !important;
+  }
+
+  .mobile-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .page-content {
+    padding: var(--spacing-lg) !important;
+  }
+}
+
+/* Desktop sidebar behavior */
+@media (min-width: 768px) {
+  .sidebar {
+    transform: translateX(0) !important;
+  }
 }
 
 /* Custom Scrollbar */
@@ -941,5 +963,35 @@ p {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  
+  .main-content {
+    margin-left: 0;
+  }
+  
+  .mobile-header {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .profile-content {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+  
+  .profile-sidebar {
+    order: 2;
+  }
+  
+  .profile-content-main {
+    order: 1;
   }
 }

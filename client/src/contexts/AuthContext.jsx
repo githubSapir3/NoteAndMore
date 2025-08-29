@@ -114,8 +114,8 @@ export const AuthProvider = ({ children }) => {
   // Update user profile
   const updateProfile = async (updates) => {
     try {
-      const response = await apiClient.put('/auth/profile', updates);
-      const updatedUser = response.user;
+      const response = await apiClient.put('/users/profile', updates);
+      const updatedUser = response.data.user;
       
       // Update localStorage
       localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -124,6 +124,45 @@ export const AuthProvider = ({ children }) => {
       setUser(updatedUser);
       
       return updatedUser;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  // Update user preferences
+  const updatePreferences = async (preferences) => {
+    try {
+      const response = await apiClient.put('/users/preferences', preferences);
+      const updatedUser = { ...user, preferences: response.data.preferences };
+      
+      // Update localStorage
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      // Update state
+      setUser(updatedUser);
+      
+      return response.data.preferences;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  // Change password
+  const changePassword = async (passwordData) => {
+    try {
+      await apiClient.put('/users/change-password', passwordData);
+      return { success: true };
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  // Deactivate account
+  const deactivateAccount = async (deactivationData) => {
+    try {
+      await apiClient.delete('/users/account', { data: deactivationData });
+      logout();
+      return { success: true };
     } catch (error) {
       throw error;
     }
@@ -147,6 +186,9 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateProfile,
+    updatePreferences,
+    changePassword,
+    deactivateAccount,
     isAdmin,
     isAuthenticated,
   };

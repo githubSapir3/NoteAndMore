@@ -7,6 +7,12 @@ const Layout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Debug logging
+  console.log('Layout rendered with user:', user);
+  console.log('Current location:', location.pathname);
+  
+  
 
   const handleLogout = () => {
     logout();
@@ -64,14 +70,11 @@ const Layout = () => {
         zIndex: 50,
         transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
         transition: 'transform var(--transition-normal)',
-        overflow: 'hidden',
-        '@media (min-width: 768px)': {
-          transform: 'translateX(0)',
-        }
+        overflow: 'hidden'
       }}>
         {/* Sidebar Header */}
         <div className="sidebar-header" style={{ 
-          padding: 'var(--spacing-2xl) var(--spacing-xl)',
+                     padding: '3rem 2rem',
           borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
           background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)',
           position: 'relative',
@@ -92,16 +95,16 @@ const Layout = () => {
             <div style={{
               width: '60px',
               height: '60px',
-              background: 'var(--gradient-primary)',
-              borderRadius: 'var(--radius-xl)',
-              marginBottom: 'var(--spacing-lg)',
+                             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+               borderRadius: '1.5rem',
+               marginBottom: '1.5rem',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: '1.5rem',
               color: 'white',
               fontWeight: 'bold',
-              boxShadow: 'var(--shadow-lg)'
+                             boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)'
             }}>
               NM
             </div>
@@ -110,7 +113,7 @@ const Layout = () => {
               fontSize: '1.5rem', 
               fontWeight: '800', 
               color: 'white',
-              marginBottom: 'var(--spacing-xs)',
+                             marginBottom: '0.25rem',
               letterSpacing: '-0.02em'
             }}>
               NoteAndMore
@@ -128,7 +131,7 @@ const Layout = () => {
 
         {/* Navigation */}
         <nav className="sidebar-nav" style={{ 
-          padding: 'var(--spacing-xl) 0',
+          padding: '2rem 0',
           flex: 1,
           overflowY: 'auto'
         }}>
@@ -137,18 +140,18 @@ const Layout = () => {
               key={item.name}
               to={item.href}
               className={`nav-item ${isActive(item.href) ? 'nav-item-active' : ''}`}
-              onClick={() => setSidebarOpen(false)}
+                             onClick={() => setSidebarOpen(false)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                padding: 'var(--spacing-lg) var(--spacing-xl)',
+                                 padding: '1.5rem 2rem',
                 color: isActive(item.href) ? 'white' : 'rgba(255, 255, 255, 0.8)',
                 textDecoration: 'none',
-                borderRight: isActive(item.href) ? '4px solid var(--primary-color)' : '4px solid transparent',
+                                 borderRight: isActive(item.href) ? '4px solid #6366f1' : '4px solid transparent',
                 background: isActive(item.href) 
                   ? 'linear-gradient(90deg, rgba(99, 102, 241, 0.2) 0%, rgba(99, 102, 241, 0.1) 100%)' 
                   : 'transparent',
-                transition: 'all var(--transition-normal)',
+                transition: 'all 250ms ease-in-out',
                 position: 'relative',
                 overflow: 'hidden'
               }}
@@ -162,15 +165,15 @@ const Layout = () => {
                 bottom: 0,
                 background: 'linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%)',
                 transform: 'translateX(-100%)',
-                transition: 'transform var(--transition-normal)',
+                transition: 'transform 250ms ease-in-out',
                 opacity: isActive(item.href) ? 0 : 1
               }} />
               
               <span style={{ 
                 fontSize: '1.5rem', 
-                marginRight: 'var(--spacing-lg)',
+                                 marginRight: '1.5rem',
                 filter: isActive(item.href) ? 'drop-shadow(0 0 8px rgba(99, 102, 241, 0.5))' : 'none',
-                transition: 'filter var(--transition-normal)'
+                                 transition: 'filter 250ms ease-in-out'
               }}>
                 {item.icon}
               </span>
@@ -179,7 +182,7 @@ const Layout = () => {
                 <div style={{ 
                   fontWeight: isActive(item.href) ? '700' : '600',
                   fontSize: '1rem',
-                  marginBottom: 'var(--spacing-xs)'
+                  marginBottom: '0.25rem'
                 }}>
                   {item.name}
                 </div>
@@ -196,9 +199,9 @@ const Layout = () => {
                 <div style={{
                   width: '8px',
                   height: '8px',
-                  background: 'var(--primary-color)',
-                  borderRadius: '50%',
-                  boxShadow: '0 0 12px var(--primary-color)',
+                                   background: '#6366f1',
+                 borderRadius: '50%',
+                 boxShadow: '0 0 12px #6366f1',
                   animation: 'pulse 2s ease-in-out infinite'
                 }} />
               )}
@@ -208,37 +211,60 @@ const Layout = () => {
 
         {/* Sidebar Footer */}
         <div className="sidebar-footer" style={{ 
-          padding: 'var(--spacing-xl)',
+          padding: '2rem',
           borderTop: '1px solid rgba(255, 255, 255, 0.1)',
           background: 'rgba(0, 0, 0, 0.2)',
           backdropFilter: 'blur(10px)'
         }}>
           {/* User Profile */}
-          <div style={{ 
-            marginBottom: 'var(--spacing-lg)',
-            padding: 'var(--spacing-lg)',
-            background: 'rgba(255, 255, 255, 0.05)',
-            borderRadius: 'var(--radius-lg)',
-            border: '1px solid rgba(255, 255, 255, 0.1)'
-          }}>
-                         <div style={{ 
-               display: 'flex', 
-               alignItems: 'center', 
-               marginBottom: 'var(--spacing-md)'
-             }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                background: 'var(--gradient-primary)',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontWeight: 'bold',
-                fontSize: '1.1rem',
-                marginRight: 'var(--spacing-md)'
-              }}>
+          {user ? (
+          <Link 
+            to="/profile"
+            style={{ 
+              textDecoration: 'none',
+              display: 'block',
+              marginBottom: '1.5rem',
+              padding: '1.5rem',
+              background: 'rgba(255, 255, 255, 0.05)',
+              borderRadius: '1rem',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              transition: 'all 250ms ease-in-out',
+              cursor: 'pointer'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+                         onClick={() => {
+                           console.log('User profile clicked!');
+                           console.log('Navigating to /profile');
+                           setSidebarOpen(false);
+                         }}
+          >
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              marginBottom: '1rem'
+            }}>
+                             <div style={{
+                 width: '48px',
+                 height: '48px',
+                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                 borderRadius: '50%',
+                 display: 'flex',
+                 alignItems: 'center',
+                 justifyContent: 'center',
+                 color: 'white',
+                 fontWeight: 'bold',
+                 fontSize: '1.1rem',
+                 marginRight: '1rem'
+               }}>
                 {user?.firstName?.[0]}{user?.lastName?.[0]}
               </div>
               
@@ -247,49 +273,76 @@ const Layout = () => {
                   fontWeight: '600', 
                   color: 'white',
                   fontSize: '0.95rem',
-                  marginBottom: 'var(--spacing-xs)'
+                  marginBottom: '0.25rem'
                 }}>
                   {user?.firstName} {user?.lastName}
                 </div>
                 <div style={{ 
                   fontSize: '0.8rem', 
                   color: 'rgba(255, 255, 255, 0.7)',
-                  marginBottom: 'var(--spacing-xs)'
+                  marginBottom: '0.25rem'
                 }}>
                   {user?.email}
                 </div>
-                {user?.role && (
-                  <div style={{ 
-                    fontSize: '0.7rem', 
-                    color: 'var(--primary-color)', 
-                    textTransform: 'uppercase',
-                    fontWeight: '700',
-                    background: 'rgba(99, 102, 241, 0.2)',
-                    padding: 'var(--spacing-xs) var(--spacing-sm)',
-                    borderRadius: 'var(--radius-full)',
-                    display: 'inline-block'
-                  }}>
+                                 {user?.role && (
+                   <div style={{ 
+                     fontSize: '0.7rem', 
+                     color: '#6366f1', 
+                     textTransform: 'uppercase',
+                     fontWeight: '700',
+                     background: 'rgba(99, 102, 241, 0.2)',
+                     padding: '0.25rem 0.5rem',
+                     borderRadius: '9999px',
+                     display: 'inline-block'
+                   }}>
                     {user.role}
                   </div>
                 )}
               </div>
+              
+              {/* Click indicator */}
+              <div style={{
+                fontSize: '1.2rem',
+                color: 'rgba(255, 255, 255, 0.6)',
+                marginLeft: '0.5rem'
+              }}>
+                👤
+              </div>
             </div>
-          </div>
+            
+            <div style={{
+              fontSize: '0.75rem',
+              color: 'rgba(255, 255, 255, 0.6)',
+              textAlign: 'center',
+              fontStyle: 'italic'
+            }}>
+              Click to manage profile
+            </div>
+          </Link>
+          ) : (
+            <div style={{
+              padding: '1.5rem',
+              textAlign: 'center',
+              color: 'rgba(255, 255, 255, 0.7)'
+            }}>
+              Loading user...
+            </div>
+          )}
           
           {/* Logout Button */}
           <button
             onClick={handleLogout}
             className="btn btn-outline"
-            style={{ 
-              width: '100%',
-              height: '48px',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              color: '#fca5a5',
-              fontWeight: '600',
-              fontSize: '0.9rem',
-              transition: 'all var(--transition-normal)'
-            }}
+                         style={{ 
+               width: '100%',
+               height: '48px',
+               background: 'rgba(239, 68, 68, 0.1)',
+               border: '1px solid rgba(239, 68, 68, 0.3)',
+               color: '#fca5a5',
+               fontWeight: '600',
+               fontSize: '0.9rem',
+               transition: 'all 250ms ease-in-out'
+             }}
           >
             🚪 Sign Out
           </button>
@@ -301,34 +354,26 @@ const Layout = () => {
         flex: 1,
         marginLeft: '320px',
         background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-        minHeight: '100vh',
-        '@media (max-width: 768px)': {
-          marginLeft: '0',
-        }
+        minHeight: '100vh'
       }}>
         {/* Mobile header */}
         <div className="mobile-header" style={{
           display: 'none',
-          padding: 'var(--spacing-lg)',
-          borderBottom: '1px solid var(--border-color)',
+                     padding: '1.5rem',
+                     borderBottom: '1px solid #e2e8f0',
           background: 'rgba(255, 255, 255, 0.9)',
           backdropFilter: 'blur(10px)',
           position: 'sticky',
           top: 0,
-          zIndex: 30,
-          '@media (max-width: 768px)': {
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }
+          zIndex: 30
         }}>
           <button
             onClick={() => setSidebarOpen(true)}
             className="btn btn-outline"
-            style={{ 
-              padding: 'var(--spacing-sm)',
-              borderRadius: 'var(--radius)',
-              border: '1px solid var(--border-color)',
+                         style={{ 
+               padding: '0.5rem',
+               borderRadius: '0.5rem',
+               border: '1px solid #e2e8f0',
               background: 'white'
             }}
           >
@@ -338,13 +383,13 @@ const Layout = () => {
           <div style={{ 
             display: 'flex', 
             alignItems: 'center', 
-            gap: 'var(--spacing-sm)' 
+                         gap: '0.5rem' 
           }}>
             <div style={{
               width: '32px',
               height: '32px',
-              background: 'var(--gradient-primary)',
-              borderRadius: 'var(--radius)',
+                             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                             borderRadius: '0.5rem',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -357,7 +402,7 @@ const Layout = () => {
             <h1 style={{ 
               fontSize: '1.25rem', 
               fontWeight: '700', 
-              color: 'var(--text-primary)',
+                             color: '#0f172a',
               margin: 0
             }}>
               NoteAndMore
@@ -369,10 +414,7 @@ const Layout = () => {
 
         {/* Page content */}
         <div className="page-content" style={{ 
-          padding: 'var(--spacing-2xl)',
-          '@media (max-width: 768px)': {
-            padding: 'var(--spacing-lg)'
-          }
+                  padding: '3rem'
         }}>
           <Outlet />
         </div>

@@ -120,8 +120,64 @@ const adminRequired = async (req, res, next) => {
   }
 };
 
+// Premium or Admin middleware
+const premiumOrAdminRequired = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: "Access denied",
+        details: "Authentication required",
+      });
+    }
+
+    if (req.user.role !== "premium" && req.user.role !== "admin") {
+      return res.status(403).json({
+        error: "Access denied",
+        details: "Premium or Admin privileges required",
+      });
+    }
+
+    next();
+  } catch (error) {
+    res.status(500).json({
+      error: "Server error",
+      details: "Authorization failed",
+    });
+  }
+};
+
+// Role-based middleware factory
+const requireRole = (roles) => {
+  return async (req, res, next) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          error: "Access denied",
+          details: "Authentication required",
+        });
+      }
+
+      if (!roles.includes(req.user.role)) {
+        return res.status(403).json({
+          error: "Access denied",
+          details: `Required roles: ${roles.join(', ')}`,
+        });
+      }
+
+      next();
+    } catch (error) {
+      res.status(500).json({
+        error: "Server error",
+        details: "Authorization failed",
+      });
+    }
+  };
+};
+
 module.exports = {
   authMiddleware,
   optionalAuth,
   adminRequired,
+  premiumOrAdminRequired,
+  requireRole,
 };

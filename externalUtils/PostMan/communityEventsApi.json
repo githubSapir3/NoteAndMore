@@ -1,0 +1,1099 @@
+{
+  "info": {
+    "name": "Community Events API - Full Test Coverage",
+    "description": "Comprehensive test collection for Community Events API endpoints including authentication, validation, RSVP functionality, and edge cases",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "userToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "eventId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{userToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Authentication Setup",
+      "item": [
+        {
+          "name": "Register New User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test user registration",
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"User created successfully\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('message');",
+                  "    pm.expect(response).to.have.property('user');",
+                  "    pm.expect(response.user).to.have.property('_id');",
+                  "    pm.expect(response.user).to.have.property('email');",
+                  "});",
+                  "",
+                  "// Store user ID for subsequent tests",
+                  "if (pm.response.code === 201) {",
+                  "    pm.collectionVariables.set('userId', pm.response.json().user._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\",\n  \"username\": \"testuser\",\n  \"email\": \"testuser@example.com\",\n  \"password\": \"testpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login as User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test user login and store token",
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has token\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('token');",
+                  "    pm.expect(response).to.have.property('user');",
+                  "    pm.expect(response.user).to.have.property('_id');",
+                  "});",
+                  "",
+                  "// Store user token for subsequent requests",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('userToken', response.token);",
+                  "    pm.collectionVariables.set('userId', response.user._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"testpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public Event Access",
+      "item": [
+        {
+          "name": "Get All Community Events (Public)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has events array\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('events');",
+                  "    pm.expect(response.events).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"All events are active\", function () {",
+                  "    const response = pm.response.json();",
+                  "    response.events.forEach(event => {",
+                  "        pm.expect(event.isActive).to.be.true;",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test(\"Events are sorted by date\", function () {",
+                  "    const response = pm.response.json();",
+                  "    if (response.events.length > 1) {",
+                  "        const firstDate = new Date(response.events[0].date);",
+                  "        const secondDate = new Date(response.events[1].date);",
+                  "        pm.expect(firstDate.getTime()).to.be.at.least(secondDate.getTime());",
+                  "    }",
+                  "});",
+                  "",
+                  "// Store first event ID for subsequent tests if available",
+                  "if (pm.response.code === 200 && pm.response.json().events.length > 0) {",
+                  "    pm.collectionVariables.set('eventId', pm.response.json().events[0]._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/community-events",
+              "host": ["{{baseUrl}}"],
+              "path": ["community-events"]
+            }
+          },
+          "auth": {
+            "type": "noauth"
+          }
+        },
+        {
+          "name": "Get Events by Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"All events are in meetup category\", function () {",
+                  "    const response = pm.response.json();",
+                  "    response.events.forEach(event => {",
+                  "        pm.expect(event.category).to.eql('meetup');",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/community-events?category=meetup",
+              "host": ["{{baseUrl}}"],
+              "path": ["community-events"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "meetup"
+                }
+              ]
+            }
+          },
+          "auth": {
+            "type": "noauth"
+          }
+        },
+        {
+          "name": "Get Events by Status - Upcoming",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"All events are upcoming\", function () {",
+                  "    const response = pm.response.json();",
+                  "    const now = new Date();",
+                  "    response.events.forEach(event => {",
+                  "        const eventDate = new Date(event.date);",
+                  "        pm.expect(eventDate.getTime()).to.be.greaterThan(now.getTime());",
+                  "    });",
+                  "    });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/community-events?status=upcoming",
+              "host": ["{{baseUrl}}"],
+              "path": ["community-events"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "upcoming"
+                }
+              ]
+            }
+          },
+          "auth": {
+            "type": "noauth"
+          }
+        },
+        {
+          "name": "Get Events by Status - This Week",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Events are within this week\", function () {",
+                  "    const response = pm.response.json();",
+                  "    const now = new Date();",
+                  "    const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);",
+                  "    response.events.forEach(event => {",
+                  "        const eventDate = new Date(event.date);",
+                  "        pm.expect(eventDate.getTime()).to.be.lessThan(weekFromNow.getTime());",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/community-events?status=this-week",
+              "host": ["{{baseUrl}}"],
+              "path": ["community-events"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "this-week"
+                }
+              ]
+            }
+          },
+          "auth": {
+            "type": "noauth"
+          }
+        },
+        {
+          "name": "Get Event by ID (Public)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has event object\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('event');",
+                  "    pm.expect(response.event).to.have.property('_id');",
+                  "    pm.expect(response.event._id).to.eql(pm.collectionVariables.get('eventId'));",
+                  "});",
+                  "",
+                  "pm.test(\"Event has required fields\", function () {",
+                  "    const event = pm.response.json().event;",
+                  "    pm.expect(event).to.have.property('title');",
+                  "    pm.expect(event).to.have.property('description');",
+                  "    pm.expect(event).to.have.property('date');",
+                  "    pm.expect(event).to.have.property('time');",
+                  "    pm.expect(event).to.have.property('organizer');",
+                  "    pm.expect(event).to.have.property('isActive');",
+                  "});",
+                  "",
+                  "pm.test(\"Event is active\", function () {",
+                  "    const event = pm.response.json().event;",
+                  "    pm.expect(event.isActive).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Organizer info is populated\", function () {",
+                  "    const event = pm.response.json().event;",
+                  "    pm.expect(event.organizer).to.have.property('firstName');",
+                  "    pm.expect(event.organizer).to.have.property('lastName');",
+                  "    pm.expect(event.organizer).to.have.property('username');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/community-events/{{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["community-events", "{{eventId}}"]
+            }
+          },
+          "auth": {
+            "type": "noauth"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Event Participation",
+      "item": [
+        {
+          "name": "Join Event - Going",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Successfully joined event\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('message');",
+                  "    pm.expect(response.message).to.include('joined event');",
+                  "});",
+                  "",
+                  "pm.test(\"User is in attendees list\", function () {",
+                  "    const response = pm.response.json();",
+                  "    const event = response.event;",
+                  "    const userId = pm.collectionVariables.get('userId');",
+                  "    const attendee = event.attendees.find(a => a.user._id === userId);",
+                  "    pm.expect(attendee).to.exist;",
+                  "    pm.expect(attendee.status).to.eql('going');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"going\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/community-events/{{eventId}}/join",
+              "host": ["{{baseUrl}}"],
+              "path": ["community-events", "{{eventId}}", "join"]
+            }
+          }
+        },
+        {
+          "name": "Update RSVP Status - Maybe",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"RSVP status updated successfully\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('message');",
+                  "    pm.expect(response.message).to.include('updated successfully');",
+                  "});",
+                  "",
+                  "pm.test(\"Status changed to maybe\", function () {",
+                  "    const response = pm.response.json();",
+                  "    const event = response.event;",
+                  "    const userId = pm.collectionVariables.get('userId');",
+                  "    const attendee = event.attendees.find(a => a.user._id === userId);",
+                  "    pm.expect(attendee.status).to.eql('maybe');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"maybe\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/community-events/{{eventId}}/rsvp",
+              "host": ["{{baseUrl}}"],
+              "path": ["community-events", "{{eventId}}", "rsvp"]
+            }
+          }
+        },
+        {
+          "name": "Update RSVP Status - Not Going",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Status changed to not-going\", function () {",
+                  "    const response = pm.response.json();",
+                  "    const event = response.event;",
+                  "    const userId = pm.collectionVariables.get('userId');",
+                  "    const attendee = event.attendees.find(a => a.user._id === userId);",
+                  "    pm.expect(attendee.status).to.eql('not-going');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"not-going\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/community-events/{{eventId}}/rsvp",
+              "host": ["{{baseUrl}}"],
+              "path": ["community-events", "{{eventId}}", "rsvp"]
+            }
+          }
+        },
+        {
+          "name": "Update RSVP Status - Back to Going",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Status changed back to going\", function () {",
+                  "    const response = pm.response.json();",
+                  "    const event = response.event;",
+                  "    const userId = pm.collectionVariables.get('userId');",
+                  "    const attendee = event.attendees.find(a => a.user._id === userId);",
+                  "    pm.expect(attendee.status).to.eql('going');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"going\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/community-events/{{eventId}}/rsvp",
+              "host": ["{{baseUrl}}"],
+              "path": ["community-events", "{{eventId}}", "rsvp"]
+            }
+          }
+        },
+        {
+          "name": "Leave Event",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Successfully left event\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('message');",
+                  "    pm.expect(response.message).to.include('left event');",
+                  "});",
+                  "",
+                  "pm.test(\"User is no longer in attendees list\", function () {",
+                  "    const response = pm.response.json();",
+                  "    const event = response.event;",
+                  "    const userId = pm.collectionVariables.get('userId');",
+                  "    const attendee = event.attendees.find(a => a.user._id === userId);",
+                  "    pm.expect(attendee).to.not.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/community-events/{{eventId}}/leave",
+              "host": ["{{baseUrl}}"],
+              "path": ["community-events", "{{eventId}}", "leave"]
+            }
+          }
+        },
+        {
+          "name": "Join Event Again",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Successfully joined event again\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('message');",
+                  "    pm.expect(response.message).to.include('joined event');",
+                  "});",
+                  "",
+                  "pm.test(\"User is back in attendees list\", function () {",
+                  "    const response = pm.response.json();",
+                  "    const event = response.event;",
+                  "    const userId = pm.collectionVariables.get('userId');",
+                  "    const attendee = event.attendees.find(a => a.user._id === userId);",
+                  "    pm.expect(attendee).to.exist;",
+                  "    pm.expect(attendee.status).to.eql('going');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"going\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/community-events/{{eventId}}/join",
+              "host": ["{{baseUrl}}"],
+              "path": ["community-events", "{{eventId}}", "join"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User's Events",
+      "item": [
+        {
+          "name": "Get User's Community Events",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has events array\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('events');",
+                  "    pm.expect(response.events).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"All events are active\", function () {",
+                  "    const response = pm.response.json();",
+                  "    response.events.forEach(event => {",
+                  "        pm.expect(event.isActive).to.be.true;",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test(\"User is attending these events\", function () {",
+                  "    const response = pm.response.json();",
+                  "    const userId = pm.collectionVariables.get('userId');",
+                  "    response.events.forEach(event => {",
+                  "        const attendee = event.attendees.find(a => a.user._id === userId);",
+                  "        pm.expect(attendee).to.exist;",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/community-events/my-events",
+              "host": ["{{baseUrl}}"],
+              "path": ["community-events", "my-events"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error Handling & Validation",
+      "item": [
+        {
+          "name": "Join Non-existent Event",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test(\"Event not found error\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('error');",
+                  "    pm.expect(response.error).to.include('Event not found');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"going\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/community-events/507f1f77bcf86cd799439011/join",
+              "host": ["{{baseUrl}}"],
+              "path": ["community-events", "507f1f77bcf86cd799439011", "join"]
+            }
+          }
+        },
+        {
+          "name": "Invalid RSVP Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Validation error for invalid status\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('error');",
+                  "    pm.expect(response.error).to.include('Validation failed');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"invalid_status\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/community-events/{{eventId}}/rsvp",
+              "host": ["{{baseUrl}}"],
+              "path": ["community-events", "{{eventId}}", "rsvp"]
+            }
+          }
+        },
+        {
+          "name": "Join Inactive Event",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Event inactive error\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('error');",
+                  "    pm.expect(response.error).to.include('Event inactive');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"going\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/community-events/{{eventId}}/join",
+              "host": ["{{baseUrl}}"],
+              "path": ["community-events", "{{eventId}}", "join"]
+            }
+          }
+        },
+        {
+          "name": "Get Inactive Event",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test(\"Event not found error for inactive event\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('error');",
+                  "    pm.expect(response.error).to.include('Event not found');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/community-events/{{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["community-events", "{{eventId}}"]
+            }
+          },
+          "auth": {
+            "type": "noauth"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authentication & Authorization",
+      "item": [
+        {
+          "name": "Join Event Without Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Authentication required error\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('error');",
+                  "    pm.expect(response.error).to.include('Authentication required');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"going\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/community-events/{{eventId}}/join",
+              "host": ["{{baseUrl}}"],
+              "path": ["community-events", "{{eventId}}", "join"]
+            }
+          },
+          "auth": {
+            "type": "noauth"
+          }
+        },
+        {
+          "name": "Get My Events Without Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Authentication required error\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('error');",
+                  "    pm.expect(response.error).to.include('Authentication required');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/community-events/my-events",
+              "host": ["{{baseUrl}}"],
+              "path": ["community-events", "my-events"]
+            }
+          },
+          "auth": {
+            "type": "noauth"
+          }
+        },
+        {
+          "name": "Access with Invalid Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Invalid token error\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('error');",
+                  "    pm.expect(response.error).to.include('Invalid token');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer invalid_token_here"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/community-events/my-events",
+              "host": ["{{baseUrl}}"],
+              "path": ["community-events", "my-events"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Edge Cases & Performance",
+      "item": [
+        {
+          "name": "Join Event with Maximum Attendees",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 400\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "});",
+                  "",
+                  "pm.test(\"Response handling for capacity\", function () {",
+                  "    const response = pm.response.json();",
+                  "    if (pm.response.code === 400) {",
+                  "        pm.expect(response.error).to.include('Event full');",
+                  "    } else {",
+                  "        pm.expect(response).to.have.property('message');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"going\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/community-events/{{eventId}}/join",
+              "host": ["{{baseUrl}}"],
+              "path": ["community-events", "{{eventId}}", "join"]
+            }
+          }
+        },
+        {
+          "name": "Multiple Rapid RSVP Updates",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"RSVP updated successfully\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('message');",
+                  "    pm.expect(response.message).to.include('updated successfully');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"maybe\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/community-events/{{eventId}}/rsvp",
+              "host": ["{{baseUrl}}"],
+              "path": ["community-events", "{{eventId}}", "rsvp"]
+            }
+          }
+        },
+        {
+          "name": "Get Events with Large Dataset",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response time is reasonable\", function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has events array\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('events');",
+                  "    pm.expect(response.events).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/community-events?limit=100",
+              "host": ["{{baseUrl}}"],
+              "path": ["community-events"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "auth": {
+            "type": "noauth"
+          }
+        }
+      ]
+    }
+  ]
+}
