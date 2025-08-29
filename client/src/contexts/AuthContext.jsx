@@ -19,6 +19,13 @@ export const AuthProvider = ({ children }) => {
   // Initialize auth state from localStorage
   useEffect(() => {
     const initAuth = () => {
+      // Clear any existing auth data on startup (force login every time)
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      setLoading(false);
+      
+      // Comment out the automatic authentication check
+      /*
       const storedToken = localStorage.getItem('authToken');
       const storedUser = localStorage.getItem('user');
       
@@ -48,6 +55,7 @@ export const AuthProvider = ({ children }) => {
       } else {
         setLoading(false);
       }
+      */
     };
 
     initAuth();

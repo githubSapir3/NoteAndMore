@@ -679,6 +679,41 @@ const Events = () => {
     return date.getMonth() === currentDate.getMonth();
   };
 
+  const staticTestEvents = [
+    { 
+      _id: '1', 
+      title: 'Test Event 1', 
+      startDate: new Date().toISOString(), 
+      endDate: new Date(Date.now() + 60 * 60 * 1000).toISOString(), 
+      allDay: false, 
+      color: '#4CAF50', 
+      category: 'General', 
+      status: 'scheduled', 
+      location: { name: 'Test Location 1', address: '123 Test St' } 
+    },
+    { 
+      _id: '2', 
+      title: 'Test Event 2', 
+      startDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), 
+      endDate: new Date(Date.now() + 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(), 
+      allDay: false, 
+      color: '#2196F3', 
+      category: 'Work', 
+      status: 'scheduled', 
+      location: { name: 'Test Location 2', address: '456 Oak Ave' } 
+    },
+    { 
+      _id: '3', 
+      title: 'All Day Event', 
+      startDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), 
+      endDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), 
+      allDay: true, 
+      color: '#FF9800', 
+      category: 'Personal', 
+      status: 'scheduled', 
+      location: { name: 'Home', address: '789 Home St' } 
+    }
+  ];
   if (loading) {
     return (
       <div className="events-page">
@@ -699,6 +734,174 @@ const Events = () => {
 
   return (
     <div className="events-page">
+      {/* Comprehensive Test Section */}
+      <div style={{ 
+        backgroundColor: '#e8f5e8', 
+        padding: '20px', 
+        margin: '20px 0', 
+        border: '3px solid #28a745',
+        borderRadius: '8px'
+      }}>
+        <h2 style={{ color: '#28a745', marginBottom: '20px' }}>🧪 COMPREHENSIVE TEST SECTION</h2>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+          <div>
+            <h4>🔍 State Verification:</h4>
+            <div style={{ fontSize: '12px', fontFamily: 'monospace', backgroundColor: 'white', padding: '10px', borderRadius: '4px' }}>
+              <div><strong>Events:</strong> {events.length}</div>
+              <div><strong>Loading:</strong> {loading ? '✅ Yes' : '❌ No'}</div>
+              <div><strong>Error:</strong> {error ? `❌ ${error}` : '✅ None'}</div>
+              <div><strong>View:</strong> {view}</div>
+              <div><strong>Current Date:</strong> {currentDate.toDateString()}</div>
+              <div><strong>Upcoming:</strong> {upcomingEvents.length}</div>
+            </div>
+          </div>
+          
+          <div>
+            <h4>📅 Date Functions Test:</h4>
+            <div style={{ fontSize: '12px', fontFamily: 'monospace', backgroundColor: 'white', padding: '10px', borderRadius: '4px' }}>
+              <div><strong>Today:</strong> {new Date().toDateString()}</div>
+              <div><strong>Month Days:</strong> {getMonthDays().length}</div>
+              <div><strong>Week Days:</strong> {getWeekDays().length}</div>
+              <div><strong>Current View:</strong> {(view === 'month' ? getMonthDays() : getWeekDays()).length}</div>
+            </div>
+          </div>
+          
+          <div>
+            <h4>🧪 Test Events:</h4>
+            <div style={{ fontSize: '12px', fontFamily: 'monospace', backgroundColor: 'white', padding: '10px', borderRadius: '4px' }}>
+              {staticTestEvents.map((event, index) => (
+                <div key={index}>
+                  <strong>{event.title}</strong><br/>
+                  <span style={{ color: '#666' }}>
+                    {new Date(event.startDate).toDateString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        
+        <div style={{ marginBottom: '20px' }}>
+          <h4>🎯 Test Actions:</h4>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+            <button 
+              onClick={() => {
+                console.log('🧪 Loading test data...');
+                setEvents(staticTestEvents);
+                setUpcomingEvents(staticTestEvents.slice(0, 2));
+                setLoading(false);
+                setError(null);
+                console.log('🧪 Test data loaded successfully');
+              }} 
+              className="btn btn-success btn-sm"
+            >
+              🧪 Load Test Data
+            </button>
+            
+            <button 
+              onClick={() => {
+                console.log('🧪 Testing date functions...');
+                const today = new Date();
+                const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+                const dayAfter = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+                
+                console.log('🧪 Today:', today.toDateString());
+                console.log('🧪 Tomorrow:', tomorrow.toDateString());
+                console.log('🧪 Day After:', dayAfter.toDateString());
+                
+                // Test getEventsForDate for each day
+                [today, tomorrow, dayAfter].forEach(date => {
+                  const events = getEventsForDate(date);
+                  console.log(`🧪 Events for ${date.toDateString()}:`, events.length);
+                });
+              }} 
+              className="btn btn-info btn-sm"
+            >
+              🧪 Test Date Functions
+            </button>
+            
+            <button 
+              onClick={() => {
+                console.log('🧪 Testing calendar generation...');
+                const monthDays = getMonthDays();
+                const weekDays = getWeekDays();
+                console.log('🧪 Month days:', monthDays.length);
+                console.log('🧪 Week days:', weekDays.length);
+                console.log('🧪 First month day:', monthDays[0]?.toDateString());
+                console.log('🧪 First week day:', weekDays[0]?.toDateString());
+              }} 
+              className="btn btn-warning btn-sm"
+            >
+              🧪 Test Calendar Generation
+            </button>
+            
+            <button 
+              onClick={() => {
+                console.log('🧪 Testing event filtering...');
+                if (events.length > 0) {
+                  const today = new Date();
+                  const todayEvents = getEventsForDate(today);
+                  console.log('🧪 Today events:', todayEvents);
+                  console.log('🧪 All events:', events);
+                } else {
+                  console.log('🧪 No events to test');
+                }
+              }} 
+              className="btn btn-secondary btn-sm"
+            >
+              🧪 Test Event Filtering
+            </button>
+            
+            <button 
+              onClick={() => {
+                console.log('🧪 Testing date comparison logic...');
+                if (events.length > 0) {
+                  const testDate = new Date();
+                  console.log('🧪 Test date:', testDate.toISOString());
+                  
+                  events.forEach((event, index) => {
+                    const eventStart = new Date(event.startDate);
+                    const eventEnd = event.endDate ? new Date(event.endDate) : eventStart;
+                    const checkDate = new Date(testDate);
+                    checkDate.setHours(0, 0, 0, 0);
+                    
+                    const spansDate = eventStart <= checkDate && eventEnd >= checkDate;
+                    
+                    console.log(`🧪 Event ${index + 1}:`, {
+                      title: event.title,
+                      eventStart: eventStart.toISOString(),
+                      eventEnd: eventEnd.toISOString(),
+                      checkDate: checkDate.toISOString(),
+                      spansDate: spansDate,
+                      startComparison: eventStart <= checkDate,
+                      endComparison: eventEnd >= checkDate
+                    });
+                  });
+                } else {
+                  console.log('🧪 No events to test');
+                }
+              }} 
+              className="btn btn-danger btn-sm"
+            >
+              🧪 Test Date Logic
+            </button>
+          </div>
+        </div>
+        
+        <div style={{ backgroundColor: '#fff3cd', padding: '15px', borderRadius: '4px', border: '1px solid #ffeaa7' }}>
+          <h5>📋 Test Instructions:</h5>
+          <ol style={{ fontSize: '12px', margin: '0', paddingLeft: '20px' }}>
+            <li>Click "🧪 Load Test Data" to populate the calendar with test events</li>
+            <li>Click "🧪 Test Date Functions" to verify date calculations</li>
+            <li>Click "🧪 Test Calendar Generation" to verify calendar structure</li>
+            <li>Click "🧪 Test Event Filtering" to verify event display logic</li>
+            <li>Check the console for detailed debugging information</li>
+            <li>Verify events appear on the calendar below</li>
+          </ol>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="calendar-header">
         <div className="calendar-controls">
@@ -867,6 +1070,11 @@ const Events = () => {
             const dayEvents = getEventsForDate(date);
             const isCurrentMonthDay = view === 'month' ? isCurrentMonth(date) : true;
             
+            // Debug logging for days with events
+            if (dayEvents.length > 0) {
+              console.log(`📅 Day ${date.toDateString()} has ${dayEvents.length} events:`, dayEvents);
+            }
+            
             return (
               <div 
                 key={index} 
@@ -881,9 +1089,23 @@ const Events = () => {
                   }
                 }}
               >
-                <div className="day-number">{date.getDate()}</div>
+                                <div className="day-number">{date.getDate()}</div>
                 <div className="day-events">
-                                     {dayEvents.slice(0, 3).map((event, eventIndex) => (
+                  {/* Debug indicator */}
+                  {dayEvents.length > 0 && (
+                    <div style={{ 
+                      fontSize: '10px', 
+                      color: '#666', 
+                      marginBottom: '2px',
+                      backgroundColor: '#e8f5e8',
+                      padding: '1px 4px',
+                      borderRadius: '2px',
+                      textAlign: 'center'
+                    }}>
+                      {dayEvents.length} event(s)
+                    </div>
+                  )}
+                  {dayEvents.slice(0, 3).map((event, eventIndex) => (
                      <div
                        key={event._id}
                        className="day-event"
