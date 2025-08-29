@@ -50,19 +50,18 @@ const Events = () => {
 
 
 
+
+
   // Fetch events for current month/week
   const fetchEvents = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log('🔍 Fetching events for:', { view, currentDate: currentDate.toISOString(), eventFilters });
-      
       let response;
       if (view === 'month') {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth() + 1;
-        console.log('📅 Month view - fetching for:', { year, month });
         response = await apiClient.get(`/events/calendar/${year}/${month}`);
       } else {
         // Week view - get events for current week
@@ -70,11 +69,6 @@ const Events = () => {
         startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 6);
-        
-        console.log('📅 Week view - fetching for:', { 
-          startOfWeek: startOfWeek.toISOString(), 
-          endOfWeek: endOfWeek.toISOString() 
-        });
         
         // Build query parameters with filters
         const queryParams = new URLSearchParams({
@@ -92,13 +86,10 @@ const Events = () => {
         response = await apiClient.get(`/events?${queryParams.toString()}`);
       }
       
-      console.log('📊 API Response:', response);
-      console.log('📊 Events received:', response.events?.length || 0);
-      
-      setEvents(response.events || []);
+       setEvents(response.events || []);
     } catch (err) {
       setError(err.message);
-      console.error('❌ Error fetching events:', err);
+      console.error('Error fetching events:', err);
     } finally {
       setLoading(false);
     }
@@ -108,13 +99,7 @@ const Events = () => {
     fetchEvents();
   }, [fetchEvents]);
 
-  // Debug events state changes
-  useEffect(() => {
-    console.log('📊 Events state updated:', {
-      eventsCount: events.length,
-      events: events.map(e => ({ id: e._id, title: e.title, startDate: e.startDate }))
-    });
-  }, [events]);
+
 
   // Fetch upcoming events
   useEffect(() => {
@@ -320,9 +305,7 @@ const Events = () => {
 
   const confirmDelete = async () => {
     try {
-      console.log('Deleting event:', eventToDelete._id);
       await apiClient.del(`/events/${eventToDelete._id}`);
-      console.log('Event deleted successfully');
       
       // Close modal and reset state on success
       setShowDeleteModal(false);
@@ -331,8 +314,6 @@ const Events = () => {
       
       // Refresh events list
       await fetchEvents();
-      
-      console.log('Delete operation completed successfully');
     } catch (err) {
       console.error('Delete error:', err);
       setError(err.message || 'Failed to delete event');
@@ -342,8 +323,6 @@ const Events = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      console.log('Form data before validation:', formData);
-      
       // Validate required fields
       if (!formData.title.trim()) {
         setError('Event title is required');
@@ -454,66 +433,10 @@ const Events = () => {
         }
       }
 
-      console.log('Sending clean event data:', cleanEventData);
-      console.log('Event data types:', {
-        title: typeof cleanEventData.title,
-        startDate: typeof cleanEventData.startDate,
-        startDateValue: cleanEventData.startDate,
-        allDay: typeof cleanEventData.allDay,
-        color: typeof cleanEventData.color,
-        category: typeof cleanEventData.category
-      });
-
-      // Final validation before sending
-      if (!cleanEventData.title || cleanEventData.title.length === 0) {
-        setError('Event title cannot be empty');
-        return;
-      }
-
-      if (!cleanEventData.startDate || cleanEventData.startDate.length === 0) {
-        setError('Start date cannot be empty');
-        return;
-      }
-
-      // Log the exact data being sent
-      console.log('Final data being sent to API:', JSON.stringify(cleanEventData, null, 2));
-      
-      // Validate data structure before sending
-      const validationErrors = [];
-      if (!cleanEventData.title || cleanEventData.title.length === 0) {
-        validationErrors.push('Title is required');
-      }
-      if (!cleanEventData.startDate || cleanEventData.startDate.length === 0) {
-        validationErrors.push('Start date is required');
-      }
-      if (cleanEventData.startDate && cleanEventData.endDate) {
-        const startDate = new Date(cleanEventData.startDate);
-        const endDate = new Date(cleanEventData.endDate);
-        if (startDate >= endDate) {
-          validationErrors.push('End date must be after start date');
-        }
-      }
-      
-      if (validationErrors.length > 0) {
-        setError(`Validation errors: ${validationErrors.join(', ')}`);
-        return;
-      }
-
       if (selectedEvent) {
-        console.log('Updating event with ID:', selectedEvent._id);
-        console.log('Request URL:', `/events/${selectedEvent._id}`);
-        console.log('Request method: PUT');
-        console.log('Request headers:', {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token || localStorage.getItem('authToken')}`
-        });
-        
         const response = await apiClient.put(`/events/${selectedEvent._id}`, cleanEventData);
-        console.log('Event updated successfully:', response);
       } else {
-        console.log('Creating new event');
         const response = await apiClient.post('/events', cleanEventData);
-        console.log('Event created successfully:', response);
       }
 
       // Close modal and reset state on success
@@ -525,29 +448,15 @@ const Events = () => {
       // Refresh events list
       await fetchEvents();
       
-      // Show success message (optional)
-      console.log('Operation completed successfully');
-      
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error('Event submission error:', err);
-      console.error('Error object:', {
-        message: err.message,
-        details: err.details,
-        error: err.error,
-        response: err.response,
-        status: err.status
-      });
       
       // Try to get more detailed error information
       let errorMessage = 'Failed to save event. Please check your input and try again.';
       
       if (err.response) {
-        console.error('Response status:', err.response.status);
-        console.error('Response data:', err.response.data);
-        console.error('Response headers:', err.response.headers);
-        
         if (err.response.data) {
           if (err.response.data.details) {
             errorMessage = `Server error: ${err.response.data.details}`;
@@ -600,10 +509,7 @@ const Events = () => {
         eventData.endDate = new Date(`${quickEventData.date}T23:59`);
       }
 
-      console.log('Sending quick event data:', eventData);
-
       await apiClient.post('/events', eventData);
-      console.log('Quick event created successfully');
       
       // Close modal and reset state on success
       setShowQuickEventForm(false);
@@ -612,8 +518,6 @@ const Events = () => {
       
       // Refresh events list
       await fetchEvents();
-      
-      console.log('Quick event operation completed successfully');
     } catch (err) {
       console.error('Quick event submission error:', err);
       
@@ -634,27 +538,22 @@ const Events = () => {
 
   const getEventsForDate = (date) => {
     const dayEvents = events.filter(event => {
+      // Convert all dates to start of day for comparison
       const eventStart = new Date(event.startDate);
+      eventStart.setHours(0, 0, 0, 0);
+      
       const eventEnd = event.endDate ? new Date(event.endDate) : eventStart;
+      eventEnd.setHours(23, 59, 59, 999);
+      
       const checkDate = new Date(date);
       checkDate.setHours(0, 0, 0, 0);
       
       // Check if event spans this date
       const spansDate = eventStart <= checkDate && eventEnd >= checkDate;
       
-      if (spansDate) {
-        console.log('✅ Event spans date:', {
-          eventTitle: event.title,
-          eventStart: eventStart.toISOString(),
-          eventEnd: eventEnd.toISOString(),
-          checkDate: checkDate.toISOString()
-        });
-      }
-      
       return spansDate;
     });
     
-    console.log(`📅 Events for ${date.toDateString()}:`, dayEvents.length);
     return dayEvents;
   };
 
@@ -679,41 +578,7 @@ const Events = () => {
     return date.getMonth() === currentDate.getMonth();
   };
 
-  const staticTestEvents = [
-    { 
-      _id: '1', 
-      title: 'Test Event 1', 
-      startDate: new Date().toISOString(), 
-      endDate: new Date(Date.now() + 60 * 60 * 1000).toISOString(), 
-      allDay: false, 
-      color: '#4CAF50', 
-      category: 'General', 
-      status: 'scheduled', 
-      location: { name: 'Test Location 1', address: '123 Test St' } 
-    },
-    { 
-      _id: '2', 
-      title: 'Test Event 2', 
-      startDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), 
-      endDate: new Date(Date.now() + 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(), 
-      allDay: false, 
-      color: '#2196F3', 
-      category: 'Work', 
-      status: 'scheduled', 
-      location: { name: 'Test Location 2', address: '456 Oak Ave' } 
-    },
-    { 
-      _id: '3', 
-      title: 'All Day Event', 
-      startDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), 
-      endDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), 
-      allDay: true, 
-      color: '#FF9800', 
-      category: 'Personal', 
-      status: 'scheduled', 
-      location: { name: 'Home', address: '789 Home St' } 
-    }
-  ];
+
   if (loading) {
     return (
       <div className="events-page">
@@ -734,274 +599,82 @@ const Events = () => {
 
   return (
     <div className="events-page">
-      {/* Comprehensive Test Section */}
-      <div style={{ 
-        backgroundColor: '#e8f5e8', 
-        padding: '20px', 
-        margin: '20px 0', 
-        border: '3px solid #28a745',
-        borderRadius: '8px'
-      }}>
-        <h2 style={{ color: '#28a745', marginBottom: '20px' }}>🧪 COMPREHENSIVE TEST SECTION</h2>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '20px' }}>
-          <div>
-            <h4>🔍 State Verification:</h4>
-            <div style={{ fontSize: '12px', fontFamily: 'monospace', backgroundColor: 'white', padding: '10px', borderRadius: '4px' }}>
-              <div><strong>Events:</strong> {events.length}</div>
-              <div><strong>Loading:</strong> {loading ? '✅ Yes' : '❌ No'}</div>
-              <div><strong>Error:</strong> {error ? `❌ ${error}` : '✅ None'}</div>
-              <div><strong>View:</strong> {view}</div>
-              <div><strong>Current Date:</strong> {currentDate.toDateString()}</div>
-              <div><strong>Upcoming:</strong> {upcomingEvents.length}</div>
-            </div>
-          </div>
-          
-          <div>
-            <h4>📅 Date Functions Test:</h4>
-            <div style={{ fontSize: '12px', fontFamily: 'monospace', backgroundColor: 'white', padding: '10px', borderRadius: '4px' }}>
-              <div><strong>Today:</strong> {new Date().toDateString()}</div>
-              <div><strong>Month Days:</strong> {getMonthDays().length}</div>
-              <div><strong>Week Days:</strong> {getWeekDays().length}</div>
-              <div><strong>Current View:</strong> {(view === 'month' ? getMonthDays() : getWeekDays()).length}</div>
-            </div>
-          </div>
-          
-          <div>
-            <h4>🧪 Test Events:</h4>
-            <div style={{ fontSize: '12px', fontFamily: 'monospace', backgroundColor: 'white', padding: '10px', borderRadius: '4px' }}>
-              {staticTestEvents.map((event, index) => (
-                <div key={index}>
-                  <strong>{event.title}</strong><br/>
-                  <span style={{ color: '#666' }}>
-                    {new Date(event.startDate).toDateString()}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-        
-        <div style={{ marginBottom: '20px' }}>
-          <h4>🎯 Test Actions:</h4>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-            <button 
-              onClick={() => {
-                console.log('🧪 Loading test data...');
-                setEvents(staticTestEvents);
-                setUpcomingEvents(staticTestEvents.slice(0, 2));
-                setLoading(false);
-                setError(null);
-                console.log('🧪 Test data loaded successfully');
-              }} 
-              className="btn btn-success btn-sm"
-            >
-              🧪 Load Test Data
-            </button>
-            
-            <button 
-              onClick={() => {
-                console.log('🧪 Testing date functions...');
-                const today = new Date();
-                const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
-                const dayAfter = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
-                
-                console.log('🧪 Today:', today.toDateString());
-                console.log('🧪 Tomorrow:', tomorrow.toDateString());
-                console.log('🧪 Day After:', dayAfter.toDateString());
-                
-                // Test getEventsForDate for each day
-                [today, tomorrow, dayAfter].forEach(date => {
-                  const events = getEventsForDate(date);
-                  console.log(`🧪 Events for ${date.toDateString()}:`, events.length);
-                });
-              }} 
-              className="btn btn-info btn-sm"
-            >
-              🧪 Test Date Functions
-            </button>
-            
-            <button 
-              onClick={() => {
-                console.log('🧪 Testing calendar generation...');
-                const monthDays = getMonthDays();
-                const weekDays = getWeekDays();
-                console.log('🧪 Month days:', monthDays.length);
-                console.log('🧪 Week days:', weekDays.length);
-                console.log('🧪 First month day:', monthDays[0]?.toDateString());
-                console.log('🧪 First week day:', weekDays[0]?.toDateString());
-              }} 
-              className="btn btn-warning btn-sm"
-            >
-              🧪 Test Calendar Generation
-            </button>
-            
-            <button 
-              onClick={() => {
-                console.log('🧪 Testing event filtering...');
-                if (events.length > 0) {
-                  const today = new Date();
-                  const todayEvents = getEventsForDate(today);
-                  console.log('🧪 Today events:', todayEvents);
-                  console.log('🧪 All events:', events);
-                } else {
-                  console.log('🧪 No events to test');
-                }
-              }} 
-              className="btn btn-secondary btn-sm"
-            >
-              🧪 Test Event Filtering
-            </button>
-            
-            <button 
-              onClick={() => {
-                console.log('🧪 Testing date comparison logic...');
-                if (events.length > 0) {
-                  const testDate = new Date();
-                  console.log('🧪 Test date:', testDate.toISOString());
-                  
-                  events.forEach((event, index) => {
-                    const eventStart = new Date(event.startDate);
-                    const eventEnd = event.endDate ? new Date(event.endDate) : eventStart;
-                    const checkDate = new Date(testDate);
-                    checkDate.setHours(0, 0, 0, 0);
-                    
-                    const spansDate = eventStart <= checkDate && eventEnd >= checkDate;
-                    
-                    console.log(`🧪 Event ${index + 1}:`, {
-                      title: event.title,
-                      eventStart: eventStart.toISOString(),
-                      eventEnd: eventEnd.toISOString(),
-                      checkDate: checkDate.toISOString(),
-                      spansDate: spansDate,
-                      startComparison: eventStart <= checkDate,
-                      endComparison: eventEnd >= checkDate
-                    });
-                  });
-                } else {
-                  console.log('🧪 No events to test');
-                }
-              }} 
-              className="btn btn-danger btn-sm"
-            >
-              🧪 Test Date Logic
-            </button>
-          </div>
-        </div>
-        
-        <div style={{ backgroundColor: '#fff3cd', padding: '15px', borderRadius: '4px', border: '1px solid #ffeaa7' }}>
-          <h5>📋 Test Instructions:</h5>
-          <ol style={{ fontSize: '12px', margin: '0', paddingLeft: '20px' }}>
-            <li>Click "🧪 Load Test Data" to populate the calendar with test events</li>
-            <li>Click "🧪 Test Date Functions" to verify date calculations</li>
-            <li>Click "🧪 Test Calendar Generation" to verify calendar structure</li>
-            <li>Click "🧪 Test Event Filtering" to verify event display logic</li>
-            <li>Check the console for detailed debugging information</li>
-            <li>Verify events appear on the calendar below</li>
-          </ol>
-        </div>
-      </div>
-
-      {/* Header */}
-      <div className="calendar-header">
-        <div className="calendar-controls">
-          <button onClick={goToPrevious} className="btn btn-outline">
-            ‹
-          </button>
-          <button onClick={goToToday} className="btn btn-primary">
-            Today
-          </button>
-          <button onClick={goToNext} className="btn btn-outline">
-            ›
-          </button>
-        </div>
-        
-        <h1 className="calendar-title">
-          {view === 'month' 
-            ? currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-            : `${currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(currentDate.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-          }
-        </h1>
-        
-        <div className="view-controls">
-          <button 
-            onClick={() => setView('week')} 
-            className={`btn ${view === 'week' ? 'btn-primary' : 'btn-outline'}`}
-          >
-            Week
-          </button>
-          <button 
-            onClick={() => setView('month')} 
-            className={`btn ${view === 'month' ? 'btn-primary' : 'btn-outline'}`}
-          >
-            Month
-          </button>
-          <button onClick={() => {
-            setQuickEventData({
-              title: '',
-              date: new Date().toISOString().split('T')[0],
-              time: new Date().toTimeString().slice(0, 5),
-              allDay: false
-            });
-            setShowQuickEventForm(true);
-          }} className="btn btn-outline">
-            Quick Add
-          </button>
-                     <button onClick={handleCreateEvent} className="btn btn-success">
-             + New Event
-           </button>
-           
-           {/* Temporary Debug Button */}
+             {/* Header */}
+       <div className="calendar-header">
+         <div className="calendar-controls">
+           <button onClick={goToPrevious} className="btn btn-outline">‹</button>
+           <button onClick={goToToday} className="btn btn-primary">Today</button>
+           <button onClick={goToNext} className="btn btn-outline">›</button>
+         </div>
+         
+         <h1 className="calendar-title">
+           {view === 'month' 
+             ? currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+             : `${currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(currentDate.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+           }
+         </h1>
+         
+         <div className="view-controls">
            <button 
-             onClick={() => {
-               console.log('🔍 Manual fetch triggered');
-               console.log('Current state:', { events, loading, error, view, currentDate });
-               fetchEvents();
-             }} 
-             className="btn btn-outline btn-sm"
-             style={{ fontSize: '0.8rem', padding: '0.3rem 0.6rem' }}
+             onClick={() => setView('week')} 
+             className={`btn ${view === 'week' ? 'btn-primary' : 'btn-outline'}`}
            >
-             🔍 Debug
+             Week
            </button>
-          
-          {/* Event Filters */}
-          <div className="event-filters">
-            <select
-              value={eventFilters.category}
-              onChange={(e) => setEventFilters(prev => ({ ...prev, category: e.target.value }))}
-              className="filter-select"
-            >
-              <option value="">All Categories</option>
-              <option value="General">General</option>
-              <option value="Work">Work</option>
-              <option value="Personal">Personal</option>
-              <option value="Health">Health</option>
-              <option value="Social">Social</option>
-            </select>
-            
-            <select
-              value={eventFilters.status}
-              onChange={(e) => setEventFilters(prev => ({ ...prev, status: e.target.value }))}
-              className="filter-select"
-            >
-              <option value="scheduled">Scheduled</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-            
-            <button 
-              onClick={() => {
-                setEventFilters({ category: '', status: 'scheduled' });
-                fetchEvents();
-              }} 
-              className="btn btn-outline btn-sm"
-            >
-              Clear Filters
-            </button>
-          </div>
-          
-        </div>
-      </div>
+           <button 
+             onClick={() => setView('month')} 
+             className={`btn ${view === 'month' ? 'btn-primary' : 'btn-outline'}`}
+           >
+             Month
+           </button>
+         </div>
+         
+         <div className="calendar-actions">
+           <button onClick={handleCreateEvent} className="btn btn-success">
+             + Add Event
+           </button>
+         </div>
+       </div>
+       
+
+       
+       {/* Event Filters - Separate Section */}
+       <div className="event-filters-section">
+         <select
+           value={eventFilters.category}
+           onChange={(e) => setEventFilters(prev => ({ ...prev, category: e.target.value }))}
+           className="filter-select"
+         >
+           <option value="">All Categories</option>
+           <option value="General">General</option>
+           <option value="Work">Work</option>
+           <option value="Personal">Personal</option>
+           <option value="Health">Health</option>
+           <option value="Social">Social</option>
+         </select>
+         
+         <select
+           value={eventFilters.status}
+           onChange={(e) => setEventFilters(prev => ({ ...prev, status: e.target.value }))}
+           className="filter-select"
+         >
+           <option value="scheduled">Scheduled</option>
+           <option value="completed">Completed</option>
+           <option value="cancelled">Cancelled</option>
+         </select>
+         
+         <button 
+           onClick={() => {
+             setEventFilters({ category: '', status: 'scheduled' });
+             fetchEvents();
+           }} 
+           className="btn btn-outline btn-sm"
+         >
+           Clear
+         </button>
+         
+
+       </div>
 
       {/* Success Display */}
       {success && (
@@ -1013,15 +686,15 @@ const Events = () => {
         </div>
       )}
 
-             {/* Error Display */}
-       {error && (
-         <div className="alert alert-danger">
-           <div className="error-content">
-             <strong>Error:</strong> {error}
-           </div>
-           <button onClick={() => setError(null)} className="close-btn">×</button>
-         </div>
-       )}
+      {/* Error Display */}
+      {error && (
+        <div className="alert alert-danger">
+          <div className="error-content">
+            <strong>Error:</strong> {error}
+          </div>
+          <button onClick={() => setError(null)} className="close-btn">×</button>
+        </div>
+      )}
 
       {/* Upcoming Events */}
       {upcomingEvents.length > 0 && (
@@ -1045,7 +718,7 @@ const Events = () => {
                 <div className="upcoming-event-time">
                   {event.allDay ? 'All Day' : formatTime(event.startDate)}
                 </div>
-                                 <div className="upcoming-event-title">{truncateTitle(event.title)}</div>
+                <div className="upcoming-event-title">{truncateTitle(event.title)}</div>
                 {event.location?.name && (
                   <div className="upcoming-event-location">📍 {event.location.name}</div>
                 )}
@@ -1070,11 +743,6 @@ const Events = () => {
             const dayEvents = getEventsForDate(date);
             const isCurrentMonthDay = view === 'month' ? isCurrentMonth(date) : true;
             
-            // Debug logging for days with events
-            if (dayEvents.length > 0) {
-              console.log(`📅 Day ${date.toDateString()} has ${dayEvents.length} events:`, dayEvents);
-            }
-            
             return (
               <div 
                 key={index} 
@@ -1089,52 +757,38 @@ const Events = () => {
                   }
                 }}
               >
-                                <div className="day-number">{date.getDate()}</div>
+                <div className="day-number">{date.getDate()}</div>
                 <div className="day-events">
-                  {/* Debug indicator */}
-                  {dayEvents.length > 0 && (
-                    <div style={{ 
-                      fontSize: '10px', 
-                      color: '#666', 
-                      marginBottom: '2px',
-                      backgroundColor: '#e8f5e8',
-                      padding: '1px 4px',
-                      borderRadius: '2px',
-                      textAlign: 'center'
-                    }}>
-                      {dayEvents.length} event(s)
-                    </div>
-                  )}
                   {dayEvents.slice(0, 3).map((event, eventIndex) => (
-                     <div
-                       key={event._id}
-                       className="day-event"
-                       style={{ backgroundColor: event.color }}
-                       onClick={(e) => {
-                         e.stopPropagation();
-                         handleEditEvent(event);
-                       }}
-                       title={`${event.title}${event.description ? ` - ${event.description}` : ''}${event.location?.name ? ` at ${event.location.name}` : ''}`}
-                     >
-                       <span className="event-time">
-                         {event.allDay ? 'All Day' : formatTime(event.startDate)}
-                       </span>
-                                               <span className="event-title">{truncateTitle(event.title)}</span>
-                        {event.category && event.category !== 'General' && (
-                          <span className="event-category">{event.category}</span>
-                        )}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openAttendeeModal(event);
-                          }}
-                          className="attendee-btn"
-                          title="Manage Attendees"
-                        >
-                          👥
-                        </button>
-                     </div>
-                   ))}
+                    <div
+                      key={event._id}
+                      className="day-event"
+                      style={{ backgroundColor: event.color }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditEvent(event);
+                      }}
+                      title={`${event.title}${event.description ? ` - ${event.description}` : ''}${event.location?.name ? ` at ${event.location.name}` : ''}`}
+                    >
+                      <span className="event-time">
+                        {event.allDay ? 'All Day' : formatTime(event.startDate)}
+                      </span>
+                      <span className="event-title">{truncateTitle(event.title)}</span>
+                      {event.category && event.category !== 'General' && (
+                        <span className="event-category">{event.category}</span>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openAttendeeModal(event);
+                        }}
+                        className="attendee-btn"
+                        title="Manage Attendees"
+                      >
+                        👥
+                      </button>
+                    </div>
+                  ))}
                   {dayEvents.length > 3 && (
                     <div className="more-events">
                       +{dayEvents.length - 3} more

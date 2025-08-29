@@ -2,8 +2,36 @@
 const express = require("express");
 const { body, validationResult, query } = require("express-validator");
 const User = require("../models/User");
+const multer = require("multer");
+const path = require("path");
 
 const router = express.Router();
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/avatars/');
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: function (req, file, cb) {
+    // Check file type
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'), false);
+    }
+  }
+});
 
 // Helper function for validation errors
 const handleValidationErrors = (req, res, next) => {
@@ -528,6 +556,72 @@ router.get("/stats", async (req, res) => {
     res.status(500).json({
       error: "Server error",
       details: "Failed to get user statistics",
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/users/avatar:
+ *   post:
+ *     summary: Upload user avatar
+ *     description: Upload a new avatar image for the current user.
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               avatar:
+ *                 type: string
+ *                 format: binary
+ *                 description: Image file to upload
+ *     responses:
+ *       200:
+ *         description: Avatar uploaded successfully.
+ *       400:
+ *         description: Invalid file type or size.
+ *       500:
+ *         description: Server error.
+ */
+router.post("/avatar", upload.single('avatar'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        error: "No file uploaded",
+        details: "Please select an image file to upload"
+      });
+    }
+
+    const userId = req.user.userId || req.user._id;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        error: "User not found",
+        details: "User account not found"
+      });
+    }
+
+    // Generate the avatar URL (you might want to use a CDN or cloud storage in production)
+    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+    
+    // Update user's avatar
+    user.avatar = avatarUrl;
+    user.updatedAt = new Date();
+    await user.save();
+
+    res.json({
+      message: "Avatar uploaded successfully",
+      avatar: avatarUrl
+    });
+  } catch (error) {
+    console.error("Avatar upload error:", error);
+    res.status(500).json({
+      error: "Server error",
+      details: "Failed to upload avatar"
     });
   }
 });

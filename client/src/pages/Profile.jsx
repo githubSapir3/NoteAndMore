@@ -14,14 +14,13 @@ const Profile = () => {
     firstName: '',
     lastName: '',
     username: '',
-    avatar: ''
+    email: ''
   });
   
   // Preferences form data
   const [preferencesData, setPreferencesData] = useState({
     theme: 'light',
     language: 'en',
-    timezone: '',
     notifications: {
       email: true,
       push: true,
@@ -54,13 +53,12 @@ const Profile = () => {
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         username: user.username || '',
-        avatar: user.avatar || ''
+        email: user.email || ''
       });
       
       setPreferencesData({
         theme: user.preferences?.theme || 'light',
         language: user.preferences?.language || 'en',
-        timezone: user.preferences?.timezone || '',
         notifications: {
           email: user.preferences?.notifications?.email ?? true,
           push: user.preferences?.notifications?.push ?? true,
@@ -76,9 +74,37 @@ const Profile = () => {
   const loadUserStats = async () => {
     try {
       const response = await apiClient.get('/users/stats');
-      setUserStats(response.data.stats);
+      console.log('Stats API response:', response);
+      // Handle different response structures
+      if (response.data && response.data.stats) {
+        setUserStats(response.data.stats);
+      } else if (response.stats) {
+        setUserStats(response.stats);
+      } else {
+        console.warn('Unexpected stats response structure:', response);
+        // Set fallback stats if backend is not available
+        if (user) {
+          setUserStats({
+            accountAge: Math.floor((new Date() - new Date(user.createdAt)) / (1000 * 60 * 60 * 24)),
+            lastLogin: user.lastLogin,
+            emailVerified: user.emailVerified || false
+          });
+        } else {
+          setUserStats(null);
+        }
+      }
     } catch (error) {
       console.error('Failed to load user stats:', error);
+      // Set fallback stats if backend is not available
+      if (user) {
+        setUserStats({
+          accountAge: Math.floor((new Date() - new Date(user.createdAt)) / (1000 * 60 * 60 * 24)),
+          lastLogin: user.lastLogin,
+          emailVerified: user.emailVerified || false
+        });
+      } else {
+        setUserStats(null);
+      }
     }
   };
 
@@ -101,8 +127,8 @@ const Profile = () => {
       newErrors.username = 'Username must be between 3 and 30 characters';
     }
 
-    if (profileData.avatar && !profileData.avatar.startsWith('http')) {
-      newErrors.avatar = 'Avatar must be a valid URL starting with http:// or https://';
+    if (profileData.email && !profileData.email.includes('@')) {
+      newErrors.email = 'Email must be a valid email address';
     }
 
     setErrors(newErrors);
@@ -160,10 +186,20 @@ const Profile = () => {
 
     try {
       const response = await apiClient.put('/users/profile', profileData);
-      await updateProfile(response.data.user);
+      // Handle different response structures
+      let updatedUser;
+      if (response.data && response.data.user) {
+        updatedUser = response.data.user;
+      } else if (response.user) {
+        updatedUser = response.user;
+      } else {
+        throw new Error('Unexpected response structure from profile update');
+      }
+      
+      await updateProfile(updatedUser);
       setSuccessMessage('Profile updated successfully!');
     } catch (error) {
-      setErrorMessage(error.response?.data?.error || 'Failed to update profile');
+      setErrorMessage(error.response?.data?.error || error.message || 'Failed to update profile');
     } finally {
       setLoading(false);
     }
@@ -237,39 +273,19 @@ const Profile = () => {
   };
 
   const handleInputChange = (e, formType) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
     
     if (formType === 'profile') {
-      setProfileData(prev => ({
-        ...prev,
-        [name]: value
-      }));
+      setProfileData(prev => ({ ...prev, [name]: value }));
     } else if (formType === 'preferences') {
-      if (name.startsWith('notifications.')) {
-        const notificationType = name.split('.')[1];
-        setPreferencesData(prev => ({
-          ...prev,
-          notifications: {
-            ...prev.notifications,
-            [notificationType]: checked
-          }
-        }));
-      } else {
-        setPreferencesData(prev => ({
-          ...prev,
-          [name]: value
-        }));
-      }
+      setPreferencesData(prev => ({ ...prev, [name]: value }));
     } else if (formType === 'password') {
-      setPasswordData(prev => ({
-        ...prev,
-        [name]: value
-      }));
+      setPasswordData(prev => ({ ...prev, [name]: value }));
     } else if (formType === 'deactivation') {
       setDeactivationData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+        ...prev,
+        [name]: value
+      }));
     }
     
     // Clear errors when user starts typing
@@ -281,8 +297,18 @@ const Profile = () => {
     }
   };
 
+  const handleNotificationChange = (key, checked) => {
+    setPreferencesData(prev => ({
+      ...prev,
+      notifications: {
+        ...prev.notifications,
+        [key]: checked
+      }
+    }));
+  };
+
   if (!user) {
-    return <div className="loading">Loading profile...</div>;
+    return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading profile...</div>;
   }
 
   const tabs = [
@@ -293,12 +319,19 @@ const Profile = () => {
   ];
 
   return (
-    <div className="profile-page">
-      <div className="page-header" style={{ marginBottom: '2rem' }}>
-                 <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#0f172a' }}>
+    <div style={{ padding: '2rem' }}>
+      <style>
+        {`
+          label:hover .upload-overlay {
+            opacity: 1 !important;
+          }
+        `}
+      </style>
+      <div style={{ marginBottom: '2rem' }}>
+        <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#0f172a' }}>
           User Profile Dashboard
         </h1>
-                 <p style={{ color: '#475569', marginTop: '0.5rem', fontSize: '1.1rem' }}>
+        <p style={{ color: '#475569', marginTop: '0.5rem', fontSize: '1.1rem' }}>
           Manage your account, preferences, and security settings
         </p>
       </div>
@@ -310,7 +343,7 @@ const Profile = () => {
           marginBottom: '2rem',
           background: 'rgba(34, 197, 94, 0.1)',
           border: '1px solid rgba(34, 197, 94, 0.3)',
-          borderRadius: 'var(--radius-lg)',
+          borderRadius: '1rem',
           color: 'rgb(34, 197, 94)',
           fontWeight: '500'
         }}>
@@ -324,7 +357,7 @@ const Profile = () => {
           marginBottom: '2rem',
           background: 'rgba(239, 68, 68, 0.1)',
           border: '1px solid rgba(239, 68, 68, 0.3)',
-          borderRadius: 'var(--radius-lg)',
+          borderRadius: '1rem',
           color: 'rgb(239, 68, 68)',
           fontWeight: '500'
         }}>
@@ -332,58 +365,90 @@ const Profile = () => {
         </div>
       )}
 
-      <div className="profile-content" style={{ 
+      <div style={{ 
         display: 'grid', 
         gridTemplateColumns: '300px 1fr', 
         gap: '2rem'
       }}>
         {/* Left Sidebar - Navigation */}
-        <div className="profile-sidebar">
+        <div>
           {/* User Info Card */}
           <div style={{
             background: 'white',
             padding: '1.5rem',
-            borderRadius: 'var(--radius-xl)',
-            boxShadow: 'var(--shadow-lg)',
+            borderRadius: '1.5rem',
+            boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
             marginBottom: '1.5rem',
-            border: '1px solid var(--border-color)'
+            border: '1px solid #e2e8f0'
           }}>
-            <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-              {user.avatar ? (
-              <img 
-                src={user.avatar} 
-                alt="Profile" 
-                style={{
-                    width: '80px',
-                    height: '80px',
-                  borderRadius: '50%',
-                    objectFit: 'cover',
-                    border: '3px solid var(--primary-color)'
-                  }}
-                />
-              ) : (
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              {/* User Initials Circle */}
+              <div style={{
+                width: '120px',
+                height: '120px',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontWeight: 'bold',
+                fontSize: '3rem',
+                margin: '0 auto 1.5rem auto',
+                border: '4px solid rgba(255, 255, 255, 0.3)',
+                boxShadow: '0 20px 40px rgba(99, 102, 241, 0.3)',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                {/* Gradient overlay */}
                 <div style={{
-                  width: '80px',
-                  height: '80px',
-                  background: 'var(--gradient-primary)',
+                  position: 'absolute',
+                  top: '0',
+                  left: '0',
+                  right: '0',
+                  bottom: '0',
+                  background: 'linear-gradient(45deg, rgba(255,255,255,0.1), transparent)',
+                  borderRadius: '50%'
+                }} />
+                
+                {/* User initials */}
+                <span style={{ position: 'relative', zIndex: 1 }}>
+                  {user.firstName?.[0]?.toUpperCase() || 'U'}{user.lastName?.[0]?.toUpperCase() || ''}
+                </span>
+              </div>
+
+              {/* User Status Indicator */}
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.5rem 1rem',
+                background: 'rgba(34, 197, 94, 0.1)',
+                border: '1px solid rgba(34, 197, 94, 0.2)',
+                borderRadius: '9999px',
+                marginBottom: '1rem'
+              }}>
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  background: '#22c55e',
                   borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  fontSize: '2rem',
-                  margin: '0 auto'
+                  animation: 'pulse 2s infinite'
+                }} />
+                <span style={{
+                  fontSize: '0.875rem',
+                  color: '#16a34a',
+                  fontWeight: '600'
                 }}>
-                  {user.firstName?.[0]}{user.lastName?.[0]}
+                  Active
+                </span>
+              </div>
             </div>
-          )}
-        </div>
 
             <h3 style={{ 
               textAlign: 'center', 
               marginBottom: '0.5rem',
-              color: 'var(--text-primary)',
+              color: '#0f172a',
               fontWeight: '700'
             }}>
               {user.firstName} {user.lastName}
@@ -391,7 +456,7 @@ const Profile = () => {
             
             <p style={{ 
               textAlign: 'center', 
-              color: 'var(--text-secondary)',
+              color: '#475569',
               marginBottom: '1rem',
               fontSize: '0.9rem'
             }}>
@@ -405,12 +470,12 @@ const Profile = () => {
               }}>
                 <span style={{
                   fontSize: '0.75rem',
-                  color: 'var(--primary-color)',
+                  color: '#6366f1',
                   textTransform: 'uppercase',
                   fontWeight: '700',
                   background: 'rgba(99, 102, 241, 0.1)',
                   padding: '0.5rem 1rem',
-                  borderRadius: 'var(--radius-full)',
+                  borderRadius: '9999px',
                   border: '1px solid rgba(99, 102, 241, 0.2)'
                 }}>
                   {user.role}
@@ -420,7 +485,7 @@ const Profile = () => {
           
             <div style={{ 
               fontSize: '0.8rem', 
-              color: 'var(--text-secondary)',
+              color: '#475569',
               textAlign: 'center'
             }}>
               Member since {new Date(user.createdAt).toLocaleDateString()}
@@ -428,35 +493,92 @@ const Profile = () => {
           </div>
 
           {/* User Statistics */}
-          {userStats && (
+          {userStats ? (
             <div style={{
               background: 'white',
-              padding: '1.5rem',
-              borderRadius: 'var(--radius-xl)',
-              boxShadow: 'var(--shadow-lg)',
-              marginBottom: '1.5rem',
-              border: '1px solid var(--border-color)'
-            }}>
+              padding: '2rem',
+              borderRadius: '2rem',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
+              marginBottom: '2rem',
+              border: '1px solid rgba(255, 255, 255, 0.8)',
+              transition: 'all 300ms ease-in-out',
+              animation: 'fadeIn 0.8s ease-out 0.6s both'
+            }}
+            className="card-hover"
+            >
               <h4 style={{ 
-                marginBottom: '1rem',
-                color: 'var(--text-primary)',
-                fontWeight: '600'
+                marginBottom: '1.5rem',
+                color: '#1e293b',
+                fontWeight: '800',
+                fontSize: '1.3rem',
+                textAlign: 'center'
               }}>
                 📊 Account Statistics
               </h4>
               
-              <div style={{ fontSize: '0.9rem' }}>
-                <div style={{ marginBottom: '0.5rem' }}>
-                  <strong>Account Age:</strong> {userStats.accountAge} days
+              <div style={{ fontSize: '1rem' }}>
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  padding: '1rem',
+                  marginBottom: '1rem',
+                  background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05))',
+                  borderRadius: '1rem',
+                  border: '1px solid rgba(59, 130, 246, 0.1)'
+                }}>
+                  <span style={{ color: '#64748b', fontWeight: '600' }}>Account Age</span>
+                  <span style={{ color: '#1e293b', fontWeight: '700' }}>{userStats.accountAge} days</span>
                 </div>
-                {userStats.lastLogin && (
-                  <div style={{ marginBottom: '0.5rem' }}>
-                    <strong>Last Login:</strong> {new Date(userStats.lastLogin).toLocaleDateString()}
-                  </div>
-                )}
-                <div style={{ marginBottom: '0.5rem' }}>
-                  <strong>Email Verified:</strong> {userStats.emailVerified ? '✅ Yes' : '❌ No'}
+                
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  padding: '1rem',
+                  marginBottom: '1rem',
+                  background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05))',
+                  borderRadius: '1rem',
+                  border: '1px solid rgba(59, 130, 246, 0.1)'
+                }}>
+                  <span style={{ color: '#64748b', fontWeight: '600' }}>Last Login</span>
+                  <span style={{ color: '#1e293b', fontWeight: '700' }}>
+                    {userStats.lastLogin ? new Date(userStats.lastLogin).toLocaleDateString() : 'Never'}
+                  </span>
                 </div>
+                
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  padding: '1rem',
+                  background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05))',
+                  borderRadius: '1rem',
+                  border: '1px solid rgba(59, 130, 246, 0.1)'
+                }}>
+                  <span style={{ color: '#64748b', fontWeight: '600' }}>Email Verified</span>
+                  <span style={{ 
+                    color: userStats.emailVerified ? '#059669' : '#dc2626', 
+                    fontWeight: '700' 
+                  }}>
+                    {userStats.emailVerified ? '✅ Yes' : '❌ No'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{
+              background: 'white',
+              padding: '2rem',
+              borderRadius: '2rem',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
+              marginBottom: '2rem',
+              border: '1px solid rgba(255, 255, 255, 0.8)',
+              textAlign: 'center',
+              animation: 'fadeIn 0.8s ease-out 0.6s both'
+            }}>
+              <div style={{ color: '#64748b', fontSize: '1rem' }}>
+                Loading statistics...
               </div>
             </div>
           )}
@@ -464,10 +586,12 @@ const Profile = () => {
           {/* Tab Navigation */}
           <nav style={{
             background: 'white',
-            padding: '1rem',
-            borderRadius: 'var(--radius-xl)',
-            boxShadow: 'var(--shadow-lg)',
-            border: '1px solid var(--border-color)'
+            padding: '1.5rem',
+            borderRadius: '2rem',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
+            border: '1px solid rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(20px)',
+            animation: 'fadeIn 0.8s ease-out 0.8s both'
           }}>
             {tabs.map((tab) => (
               <button
@@ -475,184 +599,301 @@ const Profile = () => {
                 onClick={() => setActiveTab(tab.id)}
                 style={{
                   width: '100%',
-                  padding: '0.75rem 1rem',
-                  marginBottom: '0.5rem',
-                  background: activeTab === tab.id ? 'var(--primary-color)' : 'transparent',
-                  color: activeTab === tab.id ? 'white' : 'var(--text-primary)',
-                  border: '1px solid',
-                  borderColor: activeTab === tab.id ? 'var(--primary-color)' : 'var(--border-color)',
-                  borderRadius: 'var(--radius-lg)',
+                  padding: '1rem 1.5rem',
+                  marginBottom: '0.75rem',
+                  background: activeTab === tab.id 
+                    ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' 
+                    : 'rgba(59, 130, 246, 0.1)',
+                  color: activeTab === tab.id ? 'white' : '#3b82f6',
+                  border: 'none',
+                  borderRadius: '1rem',
+                  fontSize: '1rem',
+                  fontWeight: '600',
                   cursor: 'pointer',
-                  transition: 'all var(--transition-normal)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  fontWeight: '500'
+                  transition: 'all 300ms ease-in-out',
+                  border: activeTab === tab.id ? 'none' : '2px solid rgba(59, 130, 246, 0.2)',
+                  boxShadow: activeTab === tab.id 
+                    ? '0 10px 25px rgba(59, 130, 246, 0.3)' 
+                    : '0 4px 15px rgba(59, 130, 246, 0.1)'
                 }}
-              >
-                <span>{tab.icon}</span>
+                className="tab-button"
+                >
+                <span style={{ marginRight: '0.75rem' }}>{tab.icon}</span>
                 {tab.name}
               </button>
             ))}
           </nav>
         </div>
 
-        {/* Right Content - Forms */}
-        <div className="profile-content-main">
+        {/* Right Side - Content */}
+        <div style={{
+          background: 'white',
+          padding: '3rem',
+          borderRadius: '2rem',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
+          border: '1px solid rgba(255, 255, 255, 0.8)',
+          backdropFilter: 'blur(20px)',
+          minHeight: '600px',
+          animation: 'fadeIn 0.8s ease-out 1s both'
+        }}>
           {/* Profile Tab */}
           {activeTab === 'profile' && (
-            <div style={{
-              background: 'white',
-              padding: '2rem',
-              borderRadius: 'var(--radius-xl)',
-              boxShadow: 'var(--shadow-lg)',
-              border: '1px solid var(--border-color)'
-            }}>
+            <div>
               <h3 style={{ 
-                marginBottom: '1.5rem',
-                color: 'var(--text-primary)',
-                fontWeight: '700',
-                fontSize: '1.5rem'
+                marginBottom: '2rem',
+                color: '#1e293b',
+                fontWeight: '800',
+                fontSize: '2rem',
+                textAlign: 'center'
               }}>
-                Edit Profile Information
+                ✏️ Edit Profile
               </h3>
               
               <form onSubmit={handleProfileSubmit}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
                   <div>
-                    <label htmlFor="firstName" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                  First Name *
-                </label>
-                <input
-                  type="text"
-                  id="firstName"
-                  name="firstName"
+                    <label htmlFor="firstName" style={{ 
+                      display: 'block', 
+                      marginBottom: '0.75rem', 
+                      fontWeight: '700',
+                      color: '#374151',
+                      fontSize: '1rem'
+                    }}>
+                      First Name *
+                    </label>
+                    <input
+                      type="text"
+                      id="firstName"
+                      name="firstName"
                       value={profileData.firstName}
                       onChange={(e) => handleInputChange(e, 'profile')}
                       style={{
                         width: '100%',
-                        padding: '0.75rem',
-                        border: `1px solid ${errors.firstName ? '#ef4444' : 'var(--border-color)'}`,
-                        borderRadius: 'var(--radius-lg)',
-                        fontSize: '1rem'
+                        padding: '1rem 1.25rem',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '1rem',
+                        fontSize: '1rem',
+                        transition: 'all 250ms ease-in-out',
+                        background: 'white'
                       }}
-                  placeholder="First name"
+                      placeholder="First name"
                       disabled={loading}
-                />
-                {errors.firstName && (
-                      <div style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#3b82f6';
+                        e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#e5e7eb';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                    {errors.firstName && (
+                      <div style={{ 
+                        color: '#ef4444', 
+                        fontSize: '0.875rem', 
+                        marginTop: '0.5rem',
+                        fontWeight: '500'
+                      }}>
                         {errors.firstName}
                       </div>
-                )}
-              </div>
+                    )}
+                  </div>
 
                   <div>
-                    <label htmlFor="lastName" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                  Last Name *
-                </label>
-                <input
-                  type="text"
-                  id="lastName"
-                  name="lastName"
+                    <label htmlFor="lastName" style={{ 
+                      display: 'block', 
+                      marginBottom: '0.75rem', 
+                      fontWeight: '700',
+                      color: '#374151',
+                      fontSize: '1rem'
+                    }}>
+                      Last Name *
+                    </label>
+                    <input
+                      type="text"
+                      id="lastName"
+                      name="lastName"
                       value={profileData.lastName}
                       onChange={(e) => handleInputChange(e, 'profile')}
                       style={{
                         width: '100%',
-                        padding: '0.75rem',
-                        border: `1px solid ${errors.lastName ? '#ef4444' : 'var(--border-color)'}`,
-                        borderRadius: 'var(--radius-lg)',
-                        fontSize: '1rem'
+                        padding: '1rem 1.25rem',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '1rem',
+                        fontSize: '1rem',
+                        transition: 'all 250ms ease-in-out',
+                        background: 'white'
                       }}
-                  placeholder="Last name"
+                      placeholder="Last name"
                       disabled={loading}
-                />
-                {errors.lastName && (
-                      <div style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#3b82f6';
+                        e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#e5e7eb';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                    {errors.lastName && (
+                      <div style={{ 
+                        color: '#ef4444', 
+                        fontSize: '0.875rem', 
+                        marginTop: '0.5rem',
+                        fontWeight: '500'
+                      }}>
                         {errors.lastName}
                       </div>
-                )}
-              </div>
-            </div>
+                    )}
+                  </div>
+                </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
                   <div>
-                    <label htmlFor="username" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                  Username
-                </label>
-                <input
-                  type="text"
-                  id="username"
-                  name="username"
+                    <label htmlFor="username" style={{ 
+                      display: 'block', 
+                      marginBottom: '0.75rem', 
+                      fontWeight: '700',
+                      color: '#374151',
+                      fontSize: '1rem'
+                    }}>
+                      Username
+                    </label>
+                    <input
+                      type="text"
+                      id="username"
+                      name="username"
                       value={profileData.username}
                       onChange={(e) => handleInputChange(e, 'profile')}
                       style={{
                         width: '100%',
-                        padding: '0.75rem',
-                        border: `1px solid ${errors.username ? '#ef4444' : 'var(--border-color)'}`,
-                        borderRadius: 'var(--radius-lg)',
-                        fontSize: '1rem'
+                        padding: '1rem 1.25rem',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '1rem',
+                        fontSize: '1rem',
+                        transition: 'all 250ms ease-in-out',
+                        background: 'white'
                       }}
-                  placeholder="Username"
+                      placeholder="Username"
                       disabled={loading}
-                />
-                {errors.username && (
-                      <div style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#3b82f6';
+                        e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#e5e7eb';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                    {errors.username && (
+                      <div style={{ 
+                        color: '#ef4444', 
+                        fontSize: '0.875rem', 
+                        marginTop: '0.5rem',
+                        fontWeight: '500'
+                      }}>
                         {errors.username}
                       </div>
-                )}
-                <small style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
-                  Leave empty to keep current username
-                </small>
-              </div>
+                    )}
+                    <small style={{ 
+                      color: '#64748b', 
+                      fontSize: '0.875rem',
+                      marginTop: '0.5rem',
+                      display: 'block'
+                    }}>
+                      Leave empty to keep current username
+                    </small>
+                  </div>
 
                   <div>
-                    <label htmlFor="avatar" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                  Avatar URL
-                </label>
-                <input
-                  type="url"
-                  id="avatar"
-                  name="avatar"
-                      value={profileData.avatar}
+                    <label htmlFor="email" style={{ 
+                      display: 'block', 
+                      marginBottom: '0.75rem', 
+                      fontWeight: '700',
+                      color: '#374151',
+                      fontSize: '1rem'
+                    }}>
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={profileData.email}
                       onChange={(e) => handleInputChange(e, 'profile')}
                       style={{
                         width: '100%',
-                        padding: '0.75rem',
-                        border: `1px solid ${errors.avatar ? '#ef4444' : 'var(--border-color)'}`,
-                        borderRadius: 'var(--radius-lg)',
-                        fontSize: '1rem'
+                        padding: '1rem 1.25rem',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '1rem',
+                        fontSize: '1rem',
+                        transition: 'all 250ms ease-in-out',
+                        background: 'white'
                       }}
-                  placeholder="https://example.com/avatar.jpg"
+                      placeholder="Email address"
                       disabled={loading}
-                />
-                {errors.avatar && (
-                      <div style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-                        {errors.avatar}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#3b82f6';
+                        e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#e5e7eb';
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                    {errors.email && (
+                      <div style={{ 
+                        color: '#ef4444', 
+                        fontSize: '0.875rem', 
+                        marginTop: '0.5rem',
+                        fontWeight: '500'
+                      }}>
+                        {errors.email}
                       </div>
-                )}
-                <small style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
-                  Enter a valid image URL
-                </small>
-              </div>
-            </div>
+                    )}
+                    <small style={{ 
+                      color: '#64748b', 
+                      fontSize: '0.875rem',
+                      marginTop: '0.5rem',
+                      display: 'block'
+                    }}>
+                      Your email address for notifications
+                    </small>
+                  </div>
+                </div>
 
-            <button
-              type="submit"
+                <button
+                  type="submit"
                   disabled={loading}
                   style={{
-                    background: 'var(--primary-color)',
+                    width: '100%',
+                    padding: '1.25rem 2rem',
+                    background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
                     color: 'white',
-                    padding: '0.75rem 2rem',
                     border: 'none',
-                    borderRadius: 'var(--radius-lg)',
-                    fontSize: '1rem',
-                    fontWeight: '600',
+                    borderRadius: '1.5rem',
+                    fontSize: '1.1rem',
+                    fontWeight: '700',
                     cursor: loading ? 'not-allowed' : 'pointer',
                     opacity: loading ? 0.6 : 1,
-                    transition: 'all var(--transition-normal)'
+                    transition: 'all 300ms ease-in-out',
+                    boxShadow: '0 10px 25px rgba(59, 130, 246, 0.3)',
+                    marginTop: '1rem'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!loading) {
+                      e.target.style.transform = 'translateY(-3px)';
+                      e.target.style.boxShadow = '0 15px 35px rgba(59, 130, 246, 0.4)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!loading) {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = '0 10px 25px rgba(59, 130, 246, 0.3)';
+                    }
                   }}
                 >
-                  {loading ? 'Updating...' : 'Update Profile'}
+                  {loading ? 'Updating Profile...' : 'Update Profile'}
                 </button>
               </form>
             </div>
@@ -663,13 +904,13 @@ const Profile = () => {
             <div style={{
               background: 'white',
               padding: '2rem',
-              borderRadius: 'var(--radius-xl)',
-              boxShadow: 'var(--shadow-lg)',
-              border: '1px solid var(--border-color)'
+              borderRadius: '1.5rem',
+              boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+              border: '1px solid #e2e8f0'
             }}>
               <h3 style={{ 
                 marginBottom: '1.5rem',
-                color: 'var(--text-primary)',
+                color: '#0f172a',
                 fontWeight: '700',
                 fontSize: '1.5rem'
               }}>
@@ -690,8 +931,8 @@ const Profile = () => {
                       style={{
                         width: '100%',
                         padding: '0.75rem',
-                        border: '1px solid var(--border-color)',
-                        borderRadius: 'var(--radius-lg)',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '1rem',
                         fontSize: '1rem'
                       }}
                       disabled={loading}
@@ -713,8 +954,8 @@ const Profile = () => {
                       style={{
                         width: '100%',
                         padding: '0.75rem',
-                        border: '1px solid var(--border-color)',
-                        borderRadius: 'var(--radius-lg)',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '1rem',
                         fontSize: '1rem'
                       }}
                       disabled={loading}
@@ -726,28 +967,6 @@ const Profile = () => {
                 </div>
 
                 <div style={{ marginBottom: '2rem' }}>
-                  <label htmlFor="timezone" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                    Timezone
-                  </label>
-                  <input
-                    type="text"
-                    id="timezone"
-                    name="timezone"
-                    value={preferencesData.timezone}
-                    onChange={(e) => handleInputChange(e, 'preferences')}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: 'var(--radius-lg)',
-                      fontSize: '1rem'
-                    }}
-                    placeholder="e.g., UTC, America/New_York"
-                    disabled={loading}
-                  />
-                </div>
-
-                <div style={{ marginBottom: '2rem' }}>
                   <h4 style={{ marginBottom: '1rem', fontWeight: '600' }}>Notification Settings</h4>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -755,7 +974,7 @@ const Profile = () => {
                         type="checkbox"
                         name="notifications.email"
                         checked={preferencesData.notifications.email}
-                        onChange={(e) => handleInputChange(e, 'preferences')}
+                        onChange={(e) => handleNotificationChange('email', e.target.checked)}
                         disabled={loading}
                       />
                       Email Notifications
@@ -765,7 +984,7 @@ const Profile = () => {
                         type="checkbox"
                         name="notifications.push"
                         checked={preferencesData.notifications.push}
-                        onChange={(e) => handleInputChange(e, 'preferences')}
+                        onChange={(e) => handleNotificationChange('push', e.target.checked)}
                         disabled={loading}
                       />
                       Push Notifications
@@ -775,7 +994,7 @@ const Profile = () => {
                         type="checkbox"
                         name="notifications.reminders"
                         checked={preferencesData.notifications.reminders}
-                        onChange={(e) => handleInputChange(e, 'preferences')}
+                        onChange={(e) => handleNotificationChange('reminders', e.target.checked)}
                         disabled={loading}
                       />
                       Reminder Notifications
@@ -787,16 +1006,16 @@ const Profile = () => {
                   type="submit"
                   disabled={loading}
                   style={{
-                    background: 'var(--primary-color)',
+                    background: '#6366f1',
                     color: 'white',
                     padding: '0.75rem 2rem',
                     border: 'none',
-                    borderRadius: 'var(--radius-lg)',
+                    borderRadius: '1rem',
                     fontSize: '1rem',
                     fontWeight: '600',
                     cursor: loading ? 'not-allowed' : 'pointer',
                     opacity: loading ? 0.6 : 1,
-                    transition: 'all var(--transition-normal)'
+                    transition: 'all 250ms ease-in-out'
                   }}
                 >
                   {loading ? 'Updating...' : 'Update Preferences'}
@@ -810,13 +1029,13 @@ const Profile = () => {
             <div style={{
               background: 'white',
               padding: '2rem',
-              borderRadius: 'var(--radius-xl)',
-              boxShadow: 'var(--shadow-lg)',
-              border: '1px solid var(--border-color)'
+              borderRadius: '1.5rem',
+              boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+              border: '1px solid #e2e8f0'
             }}>
               <h3 style={{ 
                 marginBottom: '1.5rem',
-                color: 'var(--text-primary)',
+                color: '#0f172a',
                 fontWeight: '700',
                 fontSize: '1.5rem'
               }}>
@@ -837,8 +1056,8 @@ const Profile = () => {
                     style={{
                       width: '100%',
                       padding: '0.75rem',
-                      border: `1px solid ${errors.currentPassword ? '#ef4444' : 'var(--border-color)'}`,
-                      borderRadius: 'var(--radius-lg)',
+                      border: `1px solid ${errors.currentPassword ? '#ef4444' : '#e2e8f0'}`,
+                      borderRadius: '1rem',
                       fontSize: '1rem'
                     }}
                     placeholder="Enter current password"
@@ -865,8 +1084,8 @@ const Profile = () => {
                       style={{
                         width: '100%',
                         padding: '0.75rem',
-                        border: `1px solid ${errors.newPassword ? '#ef4444' : 'var(--border-color)'}`,
-                        borderRadius: 'var(--radius-lg)',
+                        border: `1px solid ${errors.newPassword ? '#ef4444' : '#e2e8f0'}`,
+                        borderRadius: '1rem',
                         fontSize: '1rem'
                       }}
                       placeholder="Enter new password"
@@ -892,8 +1111,8 @@ const Profile = () => {
                       style={{
                         width: '100%',
                         padding: '0.75rem',
-                        border: `1px solid ${errors.confirmPassword ? '#ef4444' : 'var(--border-color)'}`,
-                        borderRadius: 'var(--radius-lg)',
+                        border: `1px solid ${errors.confirmPassword ? '#ef4444' : '#e2e8f0'}`,
+                        borderRadius: '1rem',
                         fontSize: '1rem'
                       }}
                       placeholder="Confirm new password"
@@ -911,16 +1130,16 @@ const Profile = () => {
                   type="submit"
                   disabled={loading}
                   style={{
-                    background: 'var(--primary-color)',
+                    background: '#6366f1',
                     color: 'white',
                     padding: '0.75rem 2rem',
                     border: 'none',
-                    borderRadius: 'var(--radius-lg)',
+                    borderRadius: '1rem',
                     fontSize: '1rem',
                     fontWeight: '600',
                     cursor: loading ? 'not-allowed' : 'pointer',
                     opacity: loading ? 0.6 : 1,
-                    transition: 'all var(--transition-normal)'
+                    transition: 'all 250ms ease-in-out'
                   }}
                 >
                   {loading ? 'Changing...' : 'Change Password'}
@@ -934,14 +1153,14 @@ const Profile = () => {
             <div style={{
               background: 'white',
               padding: '2rem',
-              borderRadius: 'var(--radius-xl)',
-              boxShadow: 'var(--shadow-lg)',
-              border: '1px solid var(--border-color)'
+              borderRadius: '1.5rem',
+              boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+              border: '1px solid #e2e8f0'
             }}>
               <div style={{
                 background: 'rgba(239, 68, 68, 0.1)',
                 border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: 'var(--radius-lg)',
+                borderRadius: '1rem',
                 padding: '1.5rem',
                 marginBottom: '2rem'
               }}>
@@ -1024,12 +1243,12 @@ const Profile = () => {
                     color: 'white',
                     padding: '0.75rem 2rem',
                     border: 'none',
-                    borderRadius: 'var(--radius-lg)',
+                    borderRadius: '1rem',
                     fontSize: '1rem',
                     fontWeight: '600',
                     cursor: loading ? 'not-allowed' : 'pointer',
                     opacity: loading ? 0.6 : 1,
-                    transition: 'all var(--transition-normal)'
+                    transition: 'all 250ms ease-in-out'
                   }}
                 >
                   {loading ? 'Deactivating...' : 'Deactivate Account'}

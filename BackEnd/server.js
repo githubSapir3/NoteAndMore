@@ -92,6 +92,9 @@ app.use("/api/auth", authLimiter); // Apply stricter limits to auth routes
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
+// Serve static files from uploads folder
+app.use('/uploads', express.static('uploads'));
+
 // Logging middleware
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
